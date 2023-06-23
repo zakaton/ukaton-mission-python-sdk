@@ -1,0 +1,2 @@
+class BaseUkatonMission:
+    pass
