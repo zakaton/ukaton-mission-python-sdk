@@ -7,7 +7,7 @@ sys.path.append(".")
  
 # import method from sibling
 # module
-from ukaton_mission.udp import UDPUkatonMission
+from ukaton_mission import UDPUkatonMission
 
 ukatonMission = UDPUkatonMission()
 

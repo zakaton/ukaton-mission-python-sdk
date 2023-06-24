@@ -7,6 +7,6 @@ sys.path.append(".")
  
 # import method from sibling
 # module
-from ukaton_mission.ble import BLEUkatonMission
+from ukaton_mission import BLEUkatonMission
 
 ukatonMission = BLEUkatonMission()
