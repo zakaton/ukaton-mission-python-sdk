@@ -1,6 +1,19 @@
-test ble
-test udp
+test ble notifications
 define base class
-define parswrs
-define ble 
+  connect/disconnect
+  listeners
+  enable/disable sensors
+define parsers
+  messages to send
+  messages to receive
+define ble
+  connection/disconnection
+  services/characteristics
+  notifications
+  send messages
+  callbacks
 define udp
+  connection/disconnection
+  parse messages
+  send messages
+  callbacks
