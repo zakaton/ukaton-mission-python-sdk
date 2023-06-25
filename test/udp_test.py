@@ -1,51 +1,42 @@
 import socket
-import asyncio
+import time
+import threading
 
-FROM_IP, FROM_PORT = "0.0.0.0", 5005
-TO_IP, TO_PORT = "192.168.1.30", 9999
+# Server details
+SERVER_IP = '192.168.1.30'  # Replace with the IP address of the remote UDP server
+SERVER_PORT = 9999  # Replace with the port number of the remote UDP server
 
-#MESSAGE = b"\x00"
-PING_MESSAGE = bytearray([0])
+# Local details
+LOCAL_IP = '0.0.0.0'  # Bind to all available network interfaces
+LOCAL_PORT = 5005  # Replace with the desired local port number
 
-print("UDP target IP: %s" % TO_IP)
-print("UDP target port: %s" % TO_PORT)
-print("message: %s" % PING_MESSAGE)
-sock = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-sock.bind((FROM_IP, FROM_PORT))
+# Create a UDP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((LOCAL_IP, LOCAL_PORT))
+
+# Function to send messages
+
 
 def send_message(message):
-  sock.sendto(message, (TO_IP, TO_PORT))
+    print('sending message')
+    sock.sendto(message.encode(), (SERVER_IP, SERVER_PORT))
 
-def ping():
-  print('ping')
-  send_message(PING_MESSAGE)
+# Function to receive messages
 
-async def periodic():
-  while True:
-    ping()
-    await asyncio.sleep(1)
 
-def stop():
-  ping_task.cancel()
-  check_messages_task.cancel()
-  
-async def check_messages():
-  while True:
-    print("recvfrom")
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    print("received message: %s" % data)
-    await asyncio.sleep(1)
+def receive_messages():
+    while True:
+        data, addr = sock.recvfrom(1024)
+        print(f'Received message from {addr[0]}:{addr[1]}: {data.decode()}')
 
-loop = asyncio.get_event_loop()
-ping_task = loop.create_task(periodic())
-check_messages_task = loop.create_task(check_messages())
-loop.call_later(5, stop)
 
-loop.create_datagram_endpoint
+# Thread to receive messages without blocking
+receive_thread = threading.Thread(target=receive_messages)
+receive_thread.daemon = True
+receive_thread.start()
 
-try:
-    loop.run_until_complete(ping_task)
-    loop.run_until_complete(check_messages_task)
-except asyncio.CancelledError:
-    pass
+# Main loop to send ping messages every second
+while True:
+    # Sending a ping message with a single byte of value 0
+    send_message(chr(4))
+    time.sleep(1)
