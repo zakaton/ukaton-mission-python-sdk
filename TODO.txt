@@ -1,18 +1,17 @@
-define base class
-  connect/disconnect
-  listeners
-  enable/disable sensors
-define parsers
-  messages to send
-  messages to receive
-define ble
+parsers
+  create sensor data config
+  parse sensor data
+ble
   connection/disconnection
   services/characteristics
   notifications
   send messages
   callbacks
-define udp
+udp
   connection/disconnection
   parse messages
   send messages
   callbacks
+examples
+  ble
+  udp
