@@ -1,12 +1,17 @@
+from enum import Enum
+
 # based on https://github.com/mrdoob/eventdispatcher.js/blob/master/src/EventDispatcher.js
+
+
 class EventDispatcher():
-    def __init__(self):
+    def __init__(self, event_enum: Enum):
         self._listeners: dict[str, list] = {}
-        pass
+        for event_name in event_enum:
+            self._listeners[event_name] = []
 
     def add_event_listener(self, event_name, callback):
         if event_name not in self._listeners:
-            self._listeners[event_name] = [callback]
+            raise RuntimeError(f'invalid event name "{event_name}"')
         elif callback not in self._listeners[event_name]:
             self._listeners[event_name].append(callback)
 

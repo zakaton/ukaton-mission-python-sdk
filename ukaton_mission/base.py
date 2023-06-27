@@ -6,7 +6,7 @@ from ukaton_mission.parsers import *
 
 class BaseUkatonMission(abc.ABC):
     def __init__(self):
-        self.event_dispatcher = EventDispatcher()
+        self.event_dispatcher = EventDispatcher(EventType)
 
     @abc.abstractmethod
     def connect(identifier: str):

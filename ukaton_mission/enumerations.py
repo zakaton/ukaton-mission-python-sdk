@@ -1,4 +1,9 @@
-from enum import IntEnum
+from enum import Enum, IntEnum
+
+
+class EventType(Enum):
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
 
 
 class DeviceType(IntEnum):

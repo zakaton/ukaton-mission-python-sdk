@@ -1,4 +1,5 @@
 from ukaton_mission.enumerations import *
+from typing import Union
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,
@@ -41,3 +42,18 @@ pressure_positions: list[list[float]] = [
 
 pressure_positions = list(map(
     lambda v: [v[0] / 93.257, v[1] / 265.069], pressure_positions))
+
+
+def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
+    # FILL
+    pass
+
+
+def parse_motion_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
+    # FILL
+    pass
+
+
+def parse_pressure_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
+    # FILL
+    pass
