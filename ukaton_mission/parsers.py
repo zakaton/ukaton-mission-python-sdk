@@ -44,7 +44,7 @@ pressure_positions = list(map(
     lambda v: [v[0] / 93.257, v[1] / 265.069], pressure_positions))
 
 
-def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
+def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]) -> bytearray:
     serialized_configuration = bytearray()
     for sensor_type in configurations:
         _serialized_configuration = bytearray()
@@ -52,7 +52,8 @@ def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Un
         for data_type in configuration:
             _serialized_configuration.append(data_type)
             data_rate = configuration[data_type]
-            _serialized_configuration += data_rate.to_bytes(2, "little")
+            _serialized_configuration += data_rate.to_bytes(
+                2, byteorder="little")
         size = len(_serialized_configuration)
         if size > 0:
             serialized_configuration.append(sensor_type)
