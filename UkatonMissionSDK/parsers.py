@@ -1,6 +1,7 @@
 from UkatonMissionSDK.enumerations import *
 from typing import Union
 import math
+import numpy
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,
@@ -63,5 +64,16 @@ def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Un
     return serialized_configuration
 
 
-def parse_motion_vector(data: bytearray, byte_offset: int, scalar: float):
-    pass
+def parse_motion_vector(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
+    vector = []
+    return vector
+
+
+def parse_motion_euler(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
+    euler = []
+    return euler
+
+
+def parse_motion_quaternion(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
+    quaternion = []
+    return quaternion
