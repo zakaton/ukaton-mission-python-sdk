@@ -1,5 +1,6 @@
 parsers
-  parse sensor data
+  motion data
+  pressure data
 ble
   connection/disconnection
   services/characteristics
@@ -14,3 +15,5 @@ udp
 examples
   ble
   udp
+blender
+  fix orientations

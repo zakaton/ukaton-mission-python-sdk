@@ -1,7 +1,13 @@
 from UkatonMissionSDK.enumerations import *
 from typing import Union
+from collections import namedtuple
+
 import math
-import numpy
+import numpy as np
+import quaternion
+
+Vector2 = namedtuple("Vector2", ["x", "y"])
+Vector3 = namedtuple("Vector3", ["x", "y", "z"])
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,
@@ -17,7 +23,7 @@ pressure_data_scalars: dict[PressureDataType, float] = {
     PressureDataType.MASS: 1 / 2 ** 16,
 }
 
-pressure_positions: list[list[float]] = [
+pressure_positions: list[Vector2] = [
     [59.55, 32.3],
     [33.1, 42.15],
 
@@ -64,16 +70,79 @@ def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Un
     return serialized_configuration
 
 
-def parse_motion_vector(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
-    vector = []
+def parse_motion_vector(data: bytearray, byte_offset: int = 0, scalar: float = 1, device_type: DeviceType = DeviceType.MOTION_MODULE) -> Vector3:
+    x = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    y = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    z = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+
+    vector = None
+    if device_type == DeviceType.MOTION_MODULE:
+        vector = [-y, z, x]
+    else:
+        if device_type == DeviceType.RIGHT_INSOLE:
+            vector = [z, -x, y]
+        else:
+            vector = [-z, -x, -y]
+
     return vector
 
 
-def parse_motion_euler(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
-    euler = []
+def parse_motion_euler(data: bytearray, byte_offset: int = 0, scalar: float = 1, device_type: DeviceType = DeviceType.MOTION_MODULE) -> Vector3:
+    x = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    y = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    z = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+
+    euler = None
+    if device_type == DeviceType.MOTION_MODULE:
+        euler = [y, -z, -x]
+    else:
+        if device_type == DeviceType.RIGHT_INSOLE:
+            euler = [-z, x, -y]
+        else:
+            euler = [z, x, y]
+
     return euler
 
 
-def parse_motion_quaternion(data: bytearray, byte_offset: int, scalar: float) -> list[int]:
-    quaternion = []
+insole_correction_quaternions: dict[DeviceType, np.quaternion] = {
+    DeviceType.LEFT_INSOLE: quaternion.from_euler_angles(0, math.pi / 2, -math.pi / 2),
+    DeviceType.RIGHT_INSOLE: quaternion.from_euler_angles(
+        -math.pi / 2, -math.pi / 2, 0)
+}
+correction_quaternions: dict[DeviceType, np.quaternion] = {
+    DeviceType.MOTION_MODULE: quaternion.from_euler_angles(0, -math.pi / 2, 0),
+    DeviceType.LEFT_INSOLE: quaternion.from_euler_angles(0, math.pi, 0),
+    DeviceType.RIGHT_INSOLE: quaternion.from_euler_angles(0, math.pi, 0),
+}
+
+
+def parse_motion_quaternion(data: bytearray, byte_offset: int = 0, scalar: float = 1, device_type: DeviceType = DeviceType.MOTION_MODULE) -> np.quaternion:
+    w = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    x = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    y = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+    z = get_int_16(data, byte_offset) * scalar
+    byte_offset += 2
+
+    quaternion = np.quaternion(-y, -w, -x, z)
+    if device_type != DeviceType.MOTION_MODULE:
+        quaternion *= insole_correction_quaternions[device_type]
+    quaternion *= correction_quaternions[device_type]
+
     return quaternion
+
+
+def get_int_16(data: bytearray, byte_offset: int = 0) -> int:
+    return int.from_bytes(data[byte_offset:byte_offset + 2], byteorder="little", signed=True)
+
+
+def get_uint_16(data: bytearray, byte_offset: int = 0) -> int:
+    return int.from_bytes(data[byte_offset:byte_offset + 2], byteorder="little", signed=False)
