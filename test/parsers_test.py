@@ -1,7 +1,8 @@
 import sys
 sys.path.append(".")
 
-from ukaton_mission.parsers import *
+from UkatonMissionSDK.parsers import *
+from UkatonMissionSDK import BLEUkatonMission
 
 configuration = serialize_sensor_data_configuration({
     SensorType.MOTION: {
@@ -13,3 +14,6 @@ configuration = serialize_sensor_data_configuration({
 })
 l = list(configuration)
 print(l)
+
+ukaton_mission = BLEUkatonMission()
+ukaton_mission.parse_sensor_data(bytearray([1, 0]))

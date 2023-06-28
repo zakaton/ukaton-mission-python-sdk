@@ -6,7 +6,7 @@ LONG_DESCRIPTION = 'Access the Ukaton Missions in python via BLE or UDP'
 
 # Setting up
 setup(
-    name="ukaton_mission",
+    name="UkatonMissionSDK",
     version=VERSION,
     author="Zack Qattan",
     author_email="<zack@ukaton.com>",

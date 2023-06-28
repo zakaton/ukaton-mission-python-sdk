@@ -1,7 +1,14 @@
+# import requi9red module
 import sys
+
+# append the path of the
+# parent directory
 sys.path.append(".")
 
-from ukaton_mission import UDPUkatonMission, BLEUkatonMission
+# import method from sibling
+# module
+from UkatonMissionSDK import UDPUkatonMission, BLEUkatonMission
 
-udp_mission = UDPUkatonMission()
-print("test")
+ukaton_mission = UDPUkatonMission()
+
+print("udp")

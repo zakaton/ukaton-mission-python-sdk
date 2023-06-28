@@ -1,5 +1,6 @@
-from ukaton_mission.enumerations import *
+from UkatonMissionSDK.enumerations import *
 from typing import Union
+import math
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,
@@ -62,11 +63,5 @@ def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Un
     return serialized_configuration
 
 
-def parse_motion_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
-    # FILL
-    pass
-
-
-def parse_pressure_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
-    # FILL
+def parse_motion_vector(data: bytearray, byte_offset: int, scalar: float):
     pass
