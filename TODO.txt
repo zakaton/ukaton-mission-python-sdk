@@ -1,5 +1,4 @@
 parsers
-  serialize sensor data config
   parse sensor data
 ble
   connection/disconnection

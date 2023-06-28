@@ -37,3 +37,22 @@ class PressureDataType(IntEnum):
 class VibrationType(IntEnum):
     WAVEFORM = 0
     SEQUENCE = 1
+
+
+class UDPMessageType(IntEnum):
+    PING = 0
+    BATTERY_LEVEL = 1,
+
+    GET_TYPE = 2,
+    SET_TYPE = 3,
+
+    GET_NAME = 4,
+    SET_NAME = 5,
+
+    MOTION_CALIBRATION = 6,
+
+    GET_SENSOR_DATA_CONFIGURATIONS = 7,
+    SET_SENSOR_DATA_CONFIGURATIONS = 8,
+
+    SENSOR_DATA = 9,
+    pass

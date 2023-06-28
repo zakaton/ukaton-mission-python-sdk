@@ -45,8 +45,20 @@ pressure_positions = list(map(
 
 
 def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
-    # FILL
-    pass
+    serialized_configuration = bytearray()
+    for sensor_type in configurations:
+        _serialized_configuration = bytearray()
+        configuration = configurations[sensor_type]
+        for data_type in configuration:
+            _serialized_configuration.append(data_type)
+            data_rate = configuration[data_type]
+            _serialized_configuration += data_rate.to_bytes(2, "little")
+        size = len(_serialized_configuration)
+        if size > 0:
+            serialized_configuration.append(sensor_type)
+            serialized_configuration.append(len(_serialized_configuration))
+            serialized_configuration += _serialized_configuration
+    return serialized_configuration
 
 
 def parse_motion_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):

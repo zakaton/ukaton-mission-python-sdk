@@ -7,6 +7,11 @@ from ukaton_mission.parsers import *
 class BaseUkatonMission(abc.ABC):
     def __init__(self):
         self.event_dispatcher = EventDispatcher(EventType)
+        self.device_type = DeviceType.MOTION_MODULE
+        self.device_name = ""
+        self.battery_level = 0
+        self.pressure_data: dict[PressureDataType, object] = {}
+        self.motion_data: dict[MotionDataType, object] = {}
 
     @abc.abstractmethod
     def connect(identifier: str):
