@@ -19,7 +19,7 @@ class EventDispatcher():
         if event_name in self._listeners and callback in self._listeners[event_name]:
             self._listeners[event_name].remove(callback)
 
-    def trigger(self, event_name, *args, **kargs):
+    def dispatch(self, event_name, *args, **kargs):
         if event_name in self._listeners:
             for callback in self._listeners[event_name]:
-                callback(self, *args, **kargs)
+                callback(*args, **kargs)

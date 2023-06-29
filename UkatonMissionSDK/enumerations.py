@@ -4,6 +4,7 @@ from enum import Enum, IntEnum, auto
 class EventType(IntEnum):
     CONNECTED = auto()
     DISCONNECTED = auto()
+    PRESSURE = auto()
 
 
 class DeviceType(IntEnum):

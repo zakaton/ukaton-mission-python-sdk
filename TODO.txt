@@ -1,17 +1,16 @@
 parsers
-  pressure data
   events
 ble
   connection/disconnection
   services/characteristics
   notifications
   send messages
-  callbacks
+  events
 udp
   connection/disconnection
   parse messages
   send messages
-  callbacks
+  events
 examples
   ble
   udp

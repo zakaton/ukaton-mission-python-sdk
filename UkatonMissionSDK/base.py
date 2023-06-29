@@ -6,6 +6,11 @@ from UkatonMissionSDK.parsers import *
 import numpy as np
 import quaternion
 from typing import Union
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger("BaseUkatonMission")
+logger.setLevel(logging.DEBUG)
 
 
 class BaseUkatonMission(abc.ABC):
@@ -61,13 +66,13 @@ class BaseUkatonMission(abc.ABC):
         self._last_raw_sensor_data_timestamp = raw_timestamp
         timestamp = raw_timestamp + self._sensor_data_timestamp_offset
         byte_offset += 2
-        print(f"timestamp: {timestamp}")
+        logger.debug(f"timestamp: {timestamp}")
 
         data_len = len(data)
         while byte_offset < data_len:
             sensor_type = SensorType(data[byte_offset])
             byte_offset += 1
-            print(f"sensor_type: {sensor_type}")
+            logger.debug(f"sensor_type: {sensor_type}")
             byte_offset = self._parse_sensor_data_type(
                 data, byte_offset, timestamp, sensor_type)
 
@@ -76,7 +81,7 @@ class BaseUkatonMission(abc.ABC):
     def _parse_sensor_data_type(self, data: bytearray, byte_offset: int, timestamp: int, sensor_type: SensorType) -> int:
         data_size = data[byte_offset]
         byte_offset += 1
-        print(f"data_size: {data_size}")
+        logger.debug(f"data_size: {data_size}")
 
         final_byte_offset = byte_offset + final_byte_offset
 
@@ -88,7 +93,7 @@ class BaseUkatonMission(abc.ABC):
                 byte_offset = self._parse_pressure_data(
                     data, byte_offset, final_byte_offset, timestamp)
             case _:
-                print(f'undefined sensor_type "{sensor_type}')
+                logger.debug(f'undefined sensor_type "{sensor_type}')
 
         return byte_offset
 
@@ -96,7 +101,7 @@ class BaseUkatonMission(abc.ABC):
         while byte_offset < final_byte_offset:
             motion_sensor_data_type = MotionDataType(data[byte_offset])
             byte_offset += 1
-            print(f'motion_sensor_data_type: {motion_sensor_data_type}')
+            logger.debug(f'motion_sensor_data_type: {motion_sensor_data_type}')
 
             scalar = motion_data_scalars[motion_sensor_data_type]
 
@@ -105,41 +110,43 @@ class BaseUkatonMission(abc.ABC):
                     byte_offset += 6
                     vector = parse_motion_vector(
                         data, byte_offset, scalar, self.device_type)
-                    print(f"vector: {vector}")
+                    logger.debug(f"vector: {vector}")
                     self.motion_data[motion_sensor_data_type] = vector
                 case MotionDataType.ROTATION_RATE:
                     byte_offset += 6
                     euler = parse_motion_euler(
                         data, byte_offset, scalar, self.device_type)
-                    print(f"euler: {euler}")
+                    logger.debug(f"euler: {euler}")
                     self.motion_data[motion_sensor_data_type] = euler
                 case MotionDataType.QUATERNION:
                     byte_offset += 8
                     quat = parse_motion_quaternion(
                         data, byte_offset, scalar, self.device_type)
                     self.motion_data[motion_sensor_data_type] = quat
-                    print(f"quat: {quat}")
+                    logger.debug(f"quat: {quat}")
 
                     euler = quaternion.as_euler_angles(quat)
                     self.motion_data[MotionDataType.EULER] = euler
-                    print(f"euler: {euler}")
+                    logger.debug(f"euler: {euler}")
 
                 case _:
-                    print(
+                    logger.debug(
                         f'undefined motion_sensor_data_type: {motion_sensor_data_type}')
 
         return byte_offset
 
     def _parse_pressure_data(self, data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
-        # FILL
         while byte_offset < final_byte_offset:
             pressure_sensor_data_type = PressureDataType(data[byte_offset])
             byte_offset += 1
-            print(f'pressure_sensor_data_type: {pressure_sensor_data_type}')
+            logger.debug(
+                f'pressure_sensor_data_type: {pressure_sensor_data_type}')
+
+            scalar = pressure_data_scalars[pressure_sensor_data_type]
 
             match pressure_sensor_data_type:
                 case PressureDataType.PRESSURE_SINGLE_BYTE, PressureDataType.PRESSURE_DOUBLE_BYTE:
-                    pressure_value_list: PressureValueList = PressureValueList(
+                    pressure_values: PressureValueList = PressureValueList(
                         self.__class__.number_of_pressure_sensors, pressure_sensor_data_type)
                     for i in range(self.__class__.number_of_pressure_sensors):
                         value = 0
@@ -150,22 +157,59 @@ class BaseUkatonMission(abc.ABC):
                             value = get_uint_16(data, byte_offset)
                             byte_offset += 2
                         x, y = get_pressure_position(i, self.device_type)
-                        pressure_value_list[i] = PressureValue(x, y, value)
+                        pressure_values[i] = PressureValue(x, y, value)
 
-                    pressure_value_list.update()
-                    self.pressure_data[pressure_sensor_data_type] = pressure_value_list
+                    pressure_values.update()
+                    logger.debug(f"pressure_values: {pressure_values}")
+                    self.pressure_data[pressure_sensor_data_type] = pressure_values
+                    self.event_dispatcher.dispatch(EventType.CONNECTED)
 
                 case PressureDataType.CENTER_OF_MASS:
+                    center_of_mass = Vector2(get_float_32(
+                        data, byte_offset), get_float_32(data, byte_offset + 4))
+                    self.pressure_data[pressure_sensor_data_type] = center_of_mass
+                    logger.debug(f"center_of_mass: {center_of_mass}")
+                    byte_offset += 4 * 2
                     pass
                 case PressureDataType.MASS:
+                    mass = get_uint_32(data, byte_offset) * scalar
+                    logger.debug(f"mass: {mass}")
+                    self.pressure_data[pressure_sensor_data_type] = mass
+                    byte_offset += 4
                     pass
                 case PressureDataType.HEEL_TO_TOE:
+                    heel_to_toe = 1 - get_float_64(data, byte_offset)
+                    logger.debug(f"heel_to_toe: {heel_to_toe}")
+                    self.pressure_data[pressure_sensor_data_type] = heel_to_toe
+                    byte_offset += 8
                     pass
                 case _:
-                    print(
+                    logger.debug(
                         f'undefined pressure_sensor_data_type: {pressure_sensor_data_type}')
 
         return byte_offset
+
+    def vibrate_waveform(self, waveform: list[int]):
+        vibration = bytearray([VibrationType.WAVEFORM, *waveform])
+        self._send_vibration(vibration)
+
+    def vibrate_sequence(self, sequence: list[int]):
+        is_sequence_odd = len(sequence) % 2 == 1
+        if is_sequence_odd:
+            sequence = sequence[0:-1]
+        sequence = list(
+            map(self._format_vibration_sequence, enumerate(sequence)))
+        print(sequence)
+        vibration = bytearray([VibrationType.SEQUENCE, *sequence])
+        self._send_vibration(vibration)
+
+    def _format_vibration_sequence(self, pair):
+        index, value = pair
+        print(index, value)
+        is_index_odd = index % 2 == 1
+        if is_index_odd:
+            value = math.floor(value / 10)
+        return value
 
     @abc.abstractmethod
     def _send_vibration(self, vibration: bytearray):

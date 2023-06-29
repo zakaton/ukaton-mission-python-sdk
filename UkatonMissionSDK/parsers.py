@@ -1,8 +1,7 @@
 from UkatonMissionSDK.enumerations import *
 from typing import Union, List
 from dataclasses import dataclass
-
-
+import struct
 import math
 import numpy as np
 import quaternion
@@ -215,3 +214,15 @@ def get_int_16(data: bytearray, byte_offset: int = 0) -> int:
 
 def get_uint_16(data: bytearray, byte_offset: int = 0) -> int:
     return int.from_bytes(data[byte_offset:byte_offset + 2], byteorder="little", signed=False)
+
+
+def get_float_32(data: bytearray, byte_offset: int = 0) -> float:
+    return struct.unpack('<f', data[byte_offset:byte_offset + 2])
+
+
+def get_float_64(data: bytearray, byte_offset: int = 0) -> float:
+    return struct.unpack('<d', data[byte_offset:byte_offset + 2])
+
+
+def get_uint_32(data: bytearray, byte_offset: int = 0) -> int:
+    return struct.unpack('<L', data[byte_offset:byte_offset + 2])
