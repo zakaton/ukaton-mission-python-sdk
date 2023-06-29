@@ -17,8 +17,8 @@ class BaseUkatonMission(abc.ABC):
         self.device_name: str = ""
         self.battery_level: int = 0
         self.pressure_data: dict[PressureDataType, Union[list, float, Vector2]] = {
-            PressureDataType.PRESSURE_SINGLE_BYTE: [0] * self.__class__.number_of_pressure_sensors,
-            PressureDataType.PRESSURE_DOUBLE_BYTE: [0] * self.__class__.number_of_pressure_sensors,
+            PressureDataType.PRESSURE_SINGLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, is_single_byte=True),
+            PressureDataType.PRESSURE_DOUBLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, is_single_byte=False),
             PressureDataType.CENTER_OF_MASS: Vector2(),
             PressureDataType.MASS: 0,
             PressureDataType.HEEL_TO_TOE: Vector2(),
@@ -141,11 +141,22 @@ class BaseUkatonMission(abc.ABC):
 
             match pressure_sensor_data_type:
                 case PressureDataType.PRESSURE_SINGLE_BYTE, PressureDataType.PRESSURE_DOUBLE_BYTE:
-                    pressure = []
-                    pressure.scalar = scalar
-                    pressure.sum = 0
+                    pressure_value_list: PressureValueList = PressureValueList()
+                    sum = 0
                     for i in range(self.__class__.number_of_pressure_sensors):
-                        pass
+                        value = 0
+                        if pressure_sensor_data_type == PressureDataType.PRESSURE_SINGLE_BYTE:
+                            value = data[byte_offset]
+                            byte_offset += 1
+                        else:
+                            value = get_uint_16(data, byte_offset)
+                            byte_offset += 2
+                        sum += value
+                        x, y = get_pressure_position(i, self.device_type)
+                        pressure_value_list[i] = PressureValue(x, y, value)
+
+                    pressure_value_list.update()
+
                 case PressureDataType.CENTER_OF_MASS:
                     pass
                 case PressureDataType.MASS:

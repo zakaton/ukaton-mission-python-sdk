@@ -25,5 +25,7 @@ print(parse_motion_quaternion(
 quat = quaternion.from_euler_angles(1, 0, 0)
 print(quat)
 print(quaternion.as_euler_angles(quat))
-for i in range(0, 10):
-    print(i)
+
+print(get_pressure_position(0, False))
+p = PressureValueList(5)
+print(p)

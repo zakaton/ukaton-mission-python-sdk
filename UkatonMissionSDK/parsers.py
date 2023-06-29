@@ -1,13 +1,73 @@
 from UkatonMissionSDK.enumerations import *
-from typing import Union
-from collections import namedtuple
+from typing import Union, List
+from dataclasses import dataclass
+
 
 import math
 import numpy as np
 import quaternion
 
-Vector2 = namedtuple("Vector2", ["x", "y"], defaults=[0, 0])
-Vector3 = namedtuple("Vector3", ["x", "y", "z"], defaults=[0, 0, 0])
+
+@dataclass
+class Vector2:
+    x: float = 0
+    y: float = 0
+
+
+@dataclass
+class Vector3:
+    x: float = 0
+    y: float = 0
+    z: float = 0
+
+
+@dataclass
+class PressureValue:
+    x: float = 0
+    y: float = 0
+    raw_value: float = 0
+    normalized_value: float = 0
+
+
+class PressureValueList(List[PressureValue]):
+    def __init__(self, size: int = 0, is_single_byte: bool = True):
+        super().__init__([PressureValue() for _ in range(size)])
+        self.size: int = size
+        self.is_single_byte: bool = is_single_byte
+        self.sum: float = 0
+        self.center_of_mass: Vector2 = Vector2()
+        self.heel_to_toe: float = 0
+        self.mass: float = 0
+
+    def _update_sum(self):
+        for value in self:
+            self.sum += value.raw_value
+
+    def _update_normalized_values(self):
+        for value in self:
+            value.normalized_value = value.normalized_value / self.sum  # FIX?
+
+    def _update_center_of_mass(self):
+        x, y = 0, 0
+        for value in self:
+            x += value.normalized_value * value.x
+            y += value.normalized_value * value.y
+        self.center_of_mass.x = x
+        self.center_of_mass.y = y
+
+    def _update_heel_to_toe(self):
+        self.heel_to_toe = 1 - self.center_of_mass.y
+
+    def _update_mass(self):
+        self.mass = self.sum / self.size
+
+    def update(self):
+        self._update_sum()
+        self._update_normalized_values()
+        self._update_center_of_mass()
+        self._update_heel_to_toe()
+        self._update_mass()
+
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,
@@ -50,6 +110,13 @@ pressure_positions: list[Vector2] = [
 
 pressure_positions = list(map(
     lambda v: [v[0] / 93.257, v[1] / 265.069], pressure_positions))
+
+
+def get_pressure_position(index: int, device_type: DeviceType) -> Vector2:
+    x, y = pressure_positions[index]
+    if device_type == DeviceType.RIGHT_INSOLE:
+        x = 1 - x
+    return Vector2(x, y)
 
 
 def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]) -> bytearray:
