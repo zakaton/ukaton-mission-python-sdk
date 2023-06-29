@@ -6,8 +6,8 @@ import math
 import numpy as np
 import quaternion
 
-Vector2 = namedtuple("Vector2", ["x", "y"])
-Vector3 = namedtuple("Vector3", ["x", "y", "z"])
+Vector2 = namedtuple("Vector2", ["x", "y"], defaults=[0, 0])
+Vector3 = namedtuple("Vector3", ["x", "y", "z"], defaults=[0, 0, 0])
 
 motion_data_scalars: dict[MotionDataType, float] = {
     MotionDataType.ACCELERATION: 2 ** -8,

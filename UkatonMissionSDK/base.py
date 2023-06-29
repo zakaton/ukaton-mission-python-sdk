@@ -19,17 +19,18 @@ class BaseUkatonMission(abc.ABC):
         self.pressure_data: dict[PressureDataType, Union[list, float, Vector2]] = {
             PressureDataType.PRESSURE_SINGLE_BYTE: [0] * self.__class__.number_of_pressure_sensors,
             PressureDataType.PRESSURE_DOUBLE_BYTE: [0] * self.__class__.number_of_pressure_sensors,
-            PressureDataType.CENTER_OF_MASS: [0, 0],
+            PressureDataType.CENTER_OF_MASS: Vector2(),
             PressureDataType.MASS: 0,
-            PressureDataType.HEEL_TO_TOE: [0, 0],
+            PressureDataType.HEEL_TO_TOE: Vector2(),
         }
         self.motion_data: dict[MotionDataType, Union[Vector3, np.quaternion]] = {
-            MotionDataType.ACCELERATION: [0, 0, 0],
-            MotionDataType.GRAVITY: [0, 0, 0],
-            MotionDataType.LINEAR_ACCELERATION: [0, 0, 0],
-            MotionDataType.ROTATION_RATE: [0, 0, 0],
-            MotionDataType.MAGNETOMETER: [0, 0, 0],
-            MotionDataType.QUATERNION: np.quaternion()
+            MotionDataType.ACCELERATION: Vector3(),
+            MotionDataType.GRAVITY: Vector3(),
+            MotionDataType.LINEAR_ACCELERATION: Vector3(),
+            MotionDataType.ROTATION_RATE: Vector3(),
+            MotionDataType.MAGNETOMETER: Vector3(),
+            MotionDataType.QUATERNION: np.quaternion(),
+            MotionDataType.EULER: Vector3()
         }
         self._last_time_received_sensor_data: int = 0
         self._sensor_data_timestamp_offset: int = 0
@@ -80,7 +81,7 @@ class BaseUkatonMission(abc.ABC):
         final_byte_offset = byte_offset + final_byte_offset
 
         match sensor_type:
-            case SensorType.Motion:
+            case SensorType.MOTION:
                 byte_offset = self._parse_motion_data(
                     data, byte_offset, final_byte_offset, timestamp)
             case SensorType.PRESSURE:
@@ -91,8 +92,7 @@ class BaseUkatonMission(abc.ABC):
 
         return byte_offset
 
-    def _parse_motion_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
-        # FILL
+    def _parse_motion_data(self, data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
         while byte_offset < final_byte_offset:
             motion_sensor_data_type = MotionDataType(data[byte_offset])
             byte_offset += 1
@@ -103,14 +103,26 @@ class BaseUkatonMission(abc.ABC):
             match motion_sensor_data_type:
                 case MotionDataType.ACCELERATION, MotionDataType.GRAVITY, MotionDataType.LINEAR_ACCELERATION, MotionDataType.MAGNETOMETER:
                     byte_offset += 6
-
-                    pass
+                    vector = parse_motion_vector(
+                        data, byte_offset, scalar, self.device_type)
+                    print(f"vector: {vector}")
+                    self.motion_data[motion_sensor_data_type] = vector
                 case MotionDataType.ROTATION_RATE:
                     byte_offset += 6
-                    pass
+                    euler = parse_motion_euler(
+                        data, byte_offset, scalar, self.device_type)
+                    print(f"euler: {euler}")
+                    self.motion_data[motion_sensor_data_type] = euler
                 case MotionDataType.QUATERNION:
                     byte_offset += 8
-                    pass
+                    quat = parse_motion_quaternion(
+                        data, byte_offset, scalar, self.device_type)
+                    self.motion_data[motion_sensor_data_type] = quat
+                    print(f"quat: {quat}")
+
+                    euler = quaternion.as_euler_angles(quat)
+                    self.motion_data[MotionDataType.EULER] = euler
+                    print(f"euler: {euler}")
 
                 case _:
                     print(
@@ -118,7 +130,7 @@ class BaseUkatonMission(abc.ABC):
 
         return byte_offset
 
-    def _parse_pressure_data(data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
+    def _parse_pressure_data(self, data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
         # FILL
         while byte_offset < final_byte_offset:
             pressure_sensor_data_type = PressureDataType(data[byte_offset])
@@ -129,7 +141,11 @@ class BaseUkatonMission(abc.ABC):
 
             match pressure_sensor_data_type:
                 case PressureDataType.PRESSURE_SINGLE_BYTE, PressureDataType.PRESSURE_DOUBLE_BYTE:
-                    pass
+                    pressure = []
+                    pressure.scalar = scalar
+                    pressure.sum = 0
+                    for i in range(self.__class__.number_of_pressure_sensors):
+                        pass
                 case PressureDataType.CENTER_OF_MASS:
                     pass
                 case PressureDataType.MASS:

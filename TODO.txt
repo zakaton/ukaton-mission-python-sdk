@@ -1,6 +1,6 @@
 parsers
-  motion data
   pressure data
+  events
 ble
   connection/disconnection
   services/characteristics
