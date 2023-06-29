@@ -1,5 +1,3 @@
-parsers
-  events
 ble
   connection/disconnection
   services/characteristics

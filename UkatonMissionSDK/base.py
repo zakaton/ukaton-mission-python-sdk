@@ -17,7 +17,12 @@ class BaseUkatonMission(abc.ABC):
     number_of_pressure_sensors = 16
 
     def __init__(self):
-        self.event_dispatcher: EventDispatcher = EventDispatcher(EventType)
+        self.connection_event_dispatcher: EventDispatcher = EventDispatcher(
+            ConnectionEventType)
+        self.motion_data_event_dispatcher: EventDispatcher = EventDispatcher(
+            MotionDataEventType)
+        self.pressure_data_event_dispatcher: EventDispatcher = EventDispatcher(
+            PressureDataEventType)
         self.device_type: DeviceType = DeviceType.MOTION_MODULE
         self.device_name: str = ""
         self.battery_level: int = 0
@@ -55,7 +60,7 @@ class BaseUkatonMission(abc.ABC):
             serialized_sensor_data_configuration)
 
     @abc.abstractmethod
-    def _send_sensor_data_configuration(self, sensor_data_configuration: dict[str, dict[str, int]]):
+    def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
         raise NotImplementedError()
 
     def parse_sensor_data(self, data: bytearray, byte_offset: int = 0) -> int:
@@ -112,22 +117,30 @@ class BaseUkatonMission(abc.ABC):
                         data, byte_offset, scalar, self.device_type)
                     logger.debug(f"vector: {vector}")
                     self.motion_data[motion_sensor_data_type] = vector
+                    self.motion_data_event_dispatcher.dispatch(
+                        MotionDataEventType(motion_sensor_data_type), vector)
                 case MotionDataType.ROTATION_RATE:
                     byte_offset += 6
                     euler = parse_motion_euler(
                         data, byte_offset, scalar, self.device_type)
                     logger.debug(f"euler: {euler}")
                     self.motion_data[motion_sensor_data_type] = euler
+                    self.motion_data_event_dispatcher.dispatch(
+                        MotionDataEventType(motion_sensor_data_type), euler)
                 case MotionDataType.QUATERNION:
                     byte_offset += 8
                     quat = parse_motion_quaternion(
                         data, byte_offset, scalar, self.device_type)
                     self.motion_data[motion_sensor_data_type] = quat
                     logger.debug(f"quat: {quat}")
+                    self.motion_data_event_dispatcher.dispatch(
+                        MotionDataEventType(motion_sensor_data_type), quat)
 
                     euler = quaternion.as_euler_angles(quat)
                     self.motion_data[MotionDataType.EULER] = euler
                     logger.debug(f"euler: {euler}")
+                    self.motion_data_event_dispatcher.dispatch(
+                        MotionDataEventType.EULER, euler)
 
                 case _:
                     logger.debug(
@@ -162,7 +175,14 @@ class BaseUkatonMission(abc.ABC):
                     pressure_values.update()
                     logger.debug(f"pressure_values: {pressure_values}")
                     self.pressure_data[pressure_sensor_data_type] = pressure_values
-                    self.event_dispatcher.dispatch(EventType.CONNECTED)
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.PRESSURE, pressure_values)
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.CENTER_OF_MASS, pressure_values.center_of_mass_send_sensor_data_configuration)
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.MASS, pressure_values.mass)
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.HEEL_TO_TOE, pressure_values.heel_to_toe)
 
                 case PressureDataType.CENTER_OF_MASS:
                     center_of_mass = Vector2(get_float_32(
@@ -170,19 +190,22 @@ class BaseUkatonMission(abc.ABC):
                     self.pressure_data[pressure_sensor_data_type] = center_of_mass
                     logger.debug(f"center_of_mass: {center_of_mass}")
                     byte_offset += 4 * 2
-                    pass
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.CENTER_OF_MASS, pressure_values)
                 case PressureDataType.MASS:
                     mass = get_uint_32(data, byte_offset) * scalar
                     logger.debug(f"mass: {mass}")
                     self.pressure_data[pressure_sensor_data_type] = mass
                     byte_offset += 4
-                    pass
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.MASS, pressure_values)
                 case PressureDataType.HEEL_TO_TOE:
                     heel_to_toe = 1 - get_float_64(data, byte_offset)
                     logger.debug(f"heel_to_toe: {heel_to_toe}")
                     self.pressure_data[pressure_sensor_data_type] = heel_to_toe
                     byte_offset += 8
-                    pass
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.HEEL_TO_TOE, pressure_values)
                 case _:
                     logger.debug(
                         f'undefined pressure_sensor_data_type: {pressure_sensor_data_type}')

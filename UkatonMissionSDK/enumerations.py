@@ -1,10 +1,26 @@
-from enum import Enum, IntEnum, auto
+from enum import IntEnum, auto
 
 
-class EventType(IntEnum):
+class ConnectionEventType(IntEnum):
     CONNECTED = auto()
     DISCONNECTED = auto()
+
+
+class PressureDataEventType(IntEnum):
     PRESSURE = auto()
+    CENTER_OF_MASS = auto()
+    MASS = auto()
+    HEEL_TO_TOE = auto()
+
+
+class MotionDataEventType(IntEnum):
+    ACCELERATION = auto()
+    GRAVITY = auto()
+    LINEAR_ACCELERATION = auto()
+    ROTATION_RATE = auto()
+    MAGNETOMETER = auto()
+    QUATERNION = auto()
+    EULER = auto()
 
 
 class DeviceType(IntEnum):
