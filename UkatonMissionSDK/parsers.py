@@ -30,14 +30,16 @@ class PressureValue:
 
 
 class PressureValueList(List[PressureValue]):
-    def __init__(self, size: int = 0, is_single_byte: bool = True):
+    def __init__(self, size: int = 0, pressure_data_type: PressureDataType = PressureDataType.PRESSURE_SINGLE_BYTE):
         super().__init__([PressureValue() for _ in range(size)])
         self.size: int = size
-        self.is_single_byte: bool = is_single_byte
+        self.pressure_data_type: PressureDataType = pressure_data_type
+        self.is_single_byte: bool = pressure_data_type == PressureDataType.PRESSURE_SINGLE_BYTE
         self.sum: float = 0
         self.center_of_mass: Vector2 = Vector2()
         self.heel_to_toe: float = 0
         self.mass: float = 0
+        self.scalar: float = pressure_data_scalars[self.pressure_data_type]
 
     def _update_sum(self):
         for value in self:
@@ -45,7 +47,7 @@ class PressureValueList(List[PressureValue]):
 
     def _update_normalized_values(self):
         for value in self:
-            value.normalized_value = value.normalized_value / self.sum  # FIX?
+            value.normalized_value = value.normalized_value / self.sum
 
     def _update_center_of_mass(self):
         x, y = 0, 0
@@ -59,7 +61,7 @@ class PressureValueList(List[PressureValue]):
         self.heel_to_toe = 1 - self.center_of_mass.y
 
     def _update_mass(self):
-        self.mass = self.sum / self.size
+        self.mass = self.sum * self.scalar / self.size
 
     def update(self):
         self._update_sum()

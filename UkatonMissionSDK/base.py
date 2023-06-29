@@ -16,9 +16,9 @@ class BaseUkatonMission(abc.ABC):
         self.device_type: DeviceType = DeviceType.MOTION_MODULE
         self.device_name: str = ""
         self.battery_level: int = 0
-        self.pressure_data: dict[PressureDataType, Union[list, float, Vector2]] = {
-            PressureDataType.PRESSURE_SINGLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, is_single_byte=True),
-            PressureDataType.PRESSURE_DOUBLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, is_single_byte=False),
+        self.pressure_data: dict[PressureDataType, Union[PressureValueList, float, Vector2]] = {
+            PressureDataType.PRESSURE_SINGLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
+            PressureDataType.PRESSURE_DOUBLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
             PressureDataType.CENTER_OF_MASS: Vector2(),
             PressureDataType.MASS: 0,
             PressureDataType.HEEL_TO_TOE: Vector2(),
@@ -137,12 +137,10 @@ class BaseUkatonMission(abc.ABC):
             byte_offset += 1
             print(f'pressure_sensor_data_type: {pressure_sensor_data_type}')
 
-            scalar = pressure_data_scalars[pressure_sensor_data_type] or 1
-
             match pressure_sensor_data_type:
                 case PressureDataType.PRESSURE_SINGLE_BYTE, PressureDataType.PRESSURE_DOUBLE_BYTE:
-                    pressure_value_list: PressureValueList = PressureValueList()
-                    sum = 0
+                    pressure_value_list: PressureValueList = PressureValueList(
+                        self.__class__.number_of_pressure_sensors, pressure_sensor_data_type)
                     for i in range(self.__class__.number_of_pressure_sensors):
                         value = 0
                         if pressure_sensor_data_type == PressureDataType.PRESSURE_SINGLE_BYTE:
@@ -151,11 +149,11 @@ class BaseUkatonMission(abc.ABC):
                         else:
                             value = get_uint_16(data, byte_offset)
                             byte_offset += 2
-                        sum += value
                         x, y = get_pressure_position(i, self.device_type)
                         pressure_value_list[i] = PressureValue(x, y, value)
 
                     pressure_value_list.update()
+                    self.pressure_data[pressure_sensor_data_type] = pressure_value_list
 
                 case PressureDataType.CENTER_OF_MASS:
                     pass
