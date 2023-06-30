@@ -2,19 +2,19 @@ from enum import IntEnum, auto
 
 
 class ConnectionEventType(IntEnum):
-    CONNECTED = auto()
+    CONNECTED = 0
     DISCONNECTED = auto()
 
 
 class PressureDataEventType(IntEnum):
-    PRESSURE = auto()
+    PRESSURE = 0
     CENTER_OF_MASS = auto()
     MASS = auto()
     HEEL_TO_TOE = auto()
 
 
 class MotionDataEventType(IntEnum):
-    ACCELERATION = auto()
+    ACCELERATION = 0
     GRAVITY = auto()
     LINEAR_ACCELERATION = auto()
     ROTATION_RATE = auto()
@@ -24,18 +24,18 @@ class MotionDataEventType(IntEnum):
 
 
 class DeviceType(IntEnum):
-    MOTION_MODULE = auto()
+    MOTION_MODULE = 0
     LEFT_INSOLE = auto()
     RIGHT_INSOLE = auto()
 
 
 class SensorType(IntEnum):
-    MOTION = auto()
+    MOTION = 0
     PRESSURE = auto()
 
 
 class MotionDataType(IntEnum):
-    ACCELERATION = auto()
+    ACCELERATION = 0
     GRAVITY = auto()
     LINEAR_ACCELERATION = auto()
     ROTATION_RATE = auto()
@@ -45,7 +45,7 @@ class MotionDataType(IntEnum):
 
 
 class PressureDataType(IntEnum):
-    PRESSURE_SINGLE_BYTE = auto()
+    PRESSURE_SINGLE_BYTE = 0
     PRESSURE_DOUBLE_BYTE = auto()
     CENTER_OF_MASS = auto()
     MASS = auto()
@@ -53,12 +53,12 @@ class PressureDataType(IntEnum):
 
 
 class VibrationType(IntEnum):
-    WAVEFORM = auto()
+    WAVEFORM = 0
     SEQUENCE = auto()
 
 
 class UDPMessageType(IntEnum):
-    PING = auto()
+    PING = 0
     BATTERY_LEVEL = auto()
 
     GET_TYPE = auto()

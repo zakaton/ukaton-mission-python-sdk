@@ -16,8 +16,10 @@ class BLEUkatonMission(BaseUkatonMission):
     def generate_uuid(value):
         return f"5691eddf-{value}-4420-b7a5-bb8751ab5181"
 
+    DEVICE_TYPE_CHARACTERISTIC_UUID: str = generate_uuid("3001")
     SENSOR_DATA_CONFIGURATION_CHARACTERISTIC_UUID: str = generate_uuid("6001")
     SENSOR_DATA_CHARACTERISTIC_UUID: str = generate_uuid("6002")
+    VIBRATION_CHARACTERISTIC_UUID: str = generate_uuid("d000")
 
     def __init__(self):
         super().__init__()
@@ -33,15 +35,25 @@ class BLEUkatonMission(BaseUkatonMission):
             return
         logger.debug("found device!")
         logger.debug("connecting to device...")
-        async with BleakClient(self.device, self._disconnection_handler) as client:
+
+        self.client = BleakClient(self.device, self._disconnection_handler)
+
+        try:
+            await self.client.connect()
             logger.debug("connected to device!")
-            self.client = client
+
+            logger.debug("getting device type...")
+            device_type_data = await self.client.read_gatt_char(self.__class__.DEVICE_TYPE_CHARACTERISTIC_UUID)
+            self.parse_device_type_data(device_type_data)
+            logger.debug("got device type!")
 
             logger.debug("starting notifications...")
-            await client.start_notify(self.__class__.SENSOR_DATA_CHARACTERISTIC_UUID, self.sensor_data_notification_handler)
+            await self.client.start_notify(self.__class__.SENSOR_DATA_CHARACTERISTIC_UUID, self.sensor_data_notification_handler)
             logger.debug("started notifications!")
 
             self._connection_handler()
+        except Exception as e:
+            print(e)
 
     def sensor_data_notification_handler(self, characteristic: BleakGATTCharacteristic, data: bytearray):
         logger.debug(f"received sensor data: {data}")
@@ -49,15 +61,15 @@ class BLEUkatonMission(BaseUkatonMission):
 
     async def disconnect(self):
         if self.is_connected:
-            pass
+            await self.client.disconnect()
 
     async def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
         if self.is_connected:
             await self.client.write_gatt_char(self.__class__.SENSOR_DATA_CONFIGURATION_CHARACTERISTIC_UUID, serialized_sensor_data_configuration)
 
-    async def _send_vibration(self, message: bytearray):
+    async def _send_vibration(self, vibration: bytearray):
         if self.is_connected:
-            pass
+            await self.client.write_gatt_char(self.__class__.VIBRATION_CHARACTERISTIC_UUID, vibration)
 
 
 class BLEUkatonMissions(BaseUkatonMissions):

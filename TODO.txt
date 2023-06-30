@@ -1,16 +1,13 @@
 ble
-  connection/disconnection
-  services/characteristics
-  notifications
-  send messages
-  events
+  get device type
+  test
 udp
   connection/disconnection
   parse messages
   send messages
   events
-examples
-  ble
-  udp
+  test
 blender
+  integrate
   fix orientations
+  UI
