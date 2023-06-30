@@ -1,5 +1,4 @@
 ble
-  get device type
   test
 udp
   connection/disconnection
