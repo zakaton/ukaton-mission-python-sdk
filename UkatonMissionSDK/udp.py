@@ -2,17 +2,17 @@ from UkatonMissionSDK.base import BaseUkatonMission, BaseUkatonMissions
 
 
 class UDPUkatonMission(BaseUkatonMission):
-    def connect(self, device_ip_address: str):
+    async def connect(self, device_ip_address: str):
         self.device_ip_address: str = device_ip_address
         pass
 
-    def disconnect(self):
+    async def disconnect(self):
         pass
 
-    def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
+    async def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
         pass
 
-    def _send_vibration(self, message: bytearray):
+    async def _send_vibration(self, message: bytearray):
         pass
 
 

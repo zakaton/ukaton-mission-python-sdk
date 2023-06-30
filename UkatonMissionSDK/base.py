@@ -17,22 +17,18 @@ class BaseUkatonMission(abc.ABC):
     number_of_pressure_sensors = 16
 
     def __init__(self):
+        self.is_connected: bool = False
         self.connection_event_dispatcher: EventDispatcher = EventDispatcher(
             ConnectionEventType)
         self.motion_data_event_dispatcher: EventDispatcher = EventDispatcher(
             MotionDataEventType)
         self.pressure_data_event_dispatcher: EventDispatcher = EventDispatcher(
             PressureDataEventType)
+
         self.device_type: DeviceType = DeviceType.MOTION_MODULE
         self.device_name: str = ""
         self.battery_level: int = 0
-        self.pressure_data: dict[PressureDataType, Union[PressureValueList, float, Vector2]] = {
-            PressureDataType.PRESSURE_SINGLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
-            PressureDataType.PRESSURE_DOUBLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
-            PressureDataType.CENTER_OF_MASS: Vector2(),
-            PressureDataType.MASS: 0,
-            PressureDataType.HEEL_TO_TOE: Vector2(),
-        }
+
         self.motion_data: dict[MotionDataType, Union[Vector3, np.quaternion]] = {
             MotionDataType.ACCELERATION: Vector3(),
             MotionDataType.GRAVITY: Vector3(),
@@ -42,15 +38,32 @@ class BaseUkatonMission(abc.ABC):
             MotionDataType.QUATERNION: np.quaternion(),
             MotionDataType.EULER: Vector3()
         }
+        self.pressure_data: dict[PressureDataType, Union[PressureValueList, float, Vector2]] = {
+            PressureDataType.PRESSURE_SINGLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
+            PressureDataType.PRESSURE_DOUBLE_BYTE: PressureValueList(self.__class__.number_of_pressure_sensors, PressureDataType.PRESSURE_SINGLE_BYTE),
+            PressureDataType.CENTER_OF_MASS: Vector2(),
+            PressureDataType.MASS: 0,
+            PressureDataType.HEEL_TO_TOE: Vector2(),
+        }
         self._last_time_received_sensor_data: int = 0
         self._sensor_data_timestamp_offset: int = 0
 
+    def _connection_handler(self):
+        self.is_connected = True
+        self.connection_event_dispatcher.dispatch(
+            ConnectionEventType.CONNECTED)
+
+    def _disconnection_handler(self, *args):
+        self.is_connected = False
+        self.connection_event_dispatcher.dispatch(
+            ConnectionEventType.DISCONNECTED)
+
     @abc.abstractmethod
-    def connect(self, identifier: str):
+    async def connect(self, identifier: str):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def disconnect(self):
+    async def disconnect(self):
         raise NotImplementedError()
 
     def set_sensor_data_configuration(self, sensor_data_configuration: dict[str, dict[str, int]]):
