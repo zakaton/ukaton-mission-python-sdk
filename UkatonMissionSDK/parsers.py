@@ -1,6 +1,7 @@
 from UkatonMissionSDK.enumerations import *
 from typing import Union, List
 from dataclasses import dataclass
+from collections import defaultdict
 import struct
 import math
 import numpy as np
@@ -18,18 +19,54 @@ class Vector2:
     x: float = 0
     y: float = 0
 
+    def __iter__(self):
+        yield self.x
+        yield self.y
+
+    def __getitem__(self, key):
+        match key:
+            case 0:
+                return self.x
+            case 1:
+                return self.y
+            case _:
+                raise IndexError("Index out of Range")
+
+    def __setitem__(self, key, value):
+        match key:
+            case 0:
+                self.x = value
+            case 1:
+                self.y = value
+            case _:
+                raise IndexError("Index out of Range")
+
 
 @dataclass
-class Vector3:
-    x: float = 0
-    y: float = 0
+class Vector3(Vector2):
     z: float = 0
 
+    def __iter__(self):
+        yield from super().__iter__()
+        yield self.z
+
+    def __getitem__(self, key):
+        match key:
+            case 2:
+                return self.z
+            case _:
+                return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        match key:
+            case 2:
+                self.z = value
+            case _:
+                return super().__setitem__(key, value)
+
 
 @dataclass
-class PressureValue:
-    x: float = 0
-    y: float = 0
+class PressureValue(Vector2):
     raw_value: float = 0
     normalized_value: float = 0
 
@@ -52,7 +89,7 @@ class PressureValueList(List[PressureValue]):
 
     def _update_normalized_values(self):
         for value in self:
-            value.normalized_value = value.normalized_value / self.sum
+            value.normalized_value = value.normalized_value / self.sum if self.sum > 0 else 0
 
     def _update_center_of_mass(self):
         x, y = 0, 0
@@ -76,21 +113,24 @@ class PressureValueList(List[PressureValue]):
         self._update_mass()
 
 
-motion_data_scalars: dict[MotionDataType, float] = {
+def default_1(): return 1
+
+
+motion_data_scalars: dict[MotionDataType, float] = defaultdict(default_1, {
     MotionDataType.ACCELERATION: 2 ** -8,
     MotionDataType.GRAVITY: 2 ** -8,
     MotionDataType.LINEAR_ACCELERATION: 2 ** -8,
     MotionDataType.ROTATION_RATE: 2 ** -9,
     MotionDataType.MAGNETOMETER: 2 ** -4,
     MotionDataType.QUATERNION: 2 ** -14
-}
-pressure_data_scalars: dict[PressureDataType, float] = {
+})
+pressure_data_scalars: dict[PressureDataType, float] = defaultdict(default_1, {
     PressureDataType.PRESSURE_SINGLE_BYTE: 1 / 2 ** 8,
     PressureDataType.PRESSURE_DOUBLE_BYTE: 1 / 2 ** 12,
     PressureDataType.MASS: 1 / 2 ** 16,
-}
+})
 
-pressure_positions: list[Vector2] = [
+pressure_positions: list[Vector2] = list(map(lambda l: Vector2(*l), [
     [59.55, 32.3],
     [33.1, 42.15],
 
@@ -113,10 +153,11 @@ pressure_positions: list[Vector2] = [
 
     [43.5, 242.0],
     [18.55, 242.1]
-]
+]))
 
-pressure_positions = list(map(
-    lambda v: [v[0] / 93.257, v[1] / 265.069], pressure_positions))
+for v in pressure_positions:
+    v.x /= 93.257
+    v.y /= 265.069
 
 
 def get_pressure_position(index: int, device_type: DeviceType) -> Vector2:
@@ -224,12 +265,12 @@ def get_uint_16(data: bytearray, byte_offset: int = 0) -> int:
 
 
 def get_float_32(data: bytearray, byte_offset: int = 0) -> float:
-    return struct.unpack('<f', data[byte_offset:byte_offset + 2])
+    return struct.unpack('<f', data[byte_offset:byte_offset + 4])[0]
 
 
 def get_float_64(data: bytearray, byte_offset: int = 0) -> float:
-    return struct.unpack('<d', data[byte_offset:byte_offset + 2])
+    return struct.unpack('<d', data[byte_offset:byte_offset + 8])[0]
 
 
 def get_uint_32(data: bytearray, byte_offset: int = 0) -> int:
-    return struct.unpack('<L', data[byte_offset:byte_offset + 2])
+    return struct.unpack('<L', data[byte_offset:byte_offset + 4])[0]

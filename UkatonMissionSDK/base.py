@@ -124,12 +124,12 @@ class BaseUkatonMission(abc.ABC):
         while byte_offset < final_byte_offset:
             motion_sensor_data_type = MotionDataType(data[byte_offset])
             byte_offset += 1
-            logger.debug(f'motion_sensor_data_type: {motion_sensor_data_type}')
+            logger.debug(f"motion_sensor_data_type: {motion_sensor_data_type}")
 
             scalar = motion_data_scalars[motion_sensor_data_type]
 
             match motion_sensor_data_type:
-                case MotionDataType.ACCELERATION, MotionDataType.GRAVITY, MotionDataType.LINEAR_ACCELERATION, MotionDataType.MAGNETOMETER:
+                case MotionDataType.ACCELERATION | MotionDataType.GRAVITY | MotionDataType.LINEAR_ACCELERATION | MotionDataType.MAGNETOMETER:
                     vector = parse_motion_vector(
                         data, byte_offset, scalar, self.device_type)
                     byte_offset += 6
@@ -176,7 +176,7 @@ class BaseUkatonMission(abc.ABC):
             scalar = pressure_data_scalars[pressure_sensor_data_type]
 
             match pressure_sensor_data_type:
-                case PressureDataType.PRESSURE_SINGLE_BYTE, PressureDataType.PRESSURE_DOUBLE_BYTE:
+                case PressureDataType.PRESSURE_SINGLE_BYTE | PressureDataType.PRESSURE_DOUBLE_BYTE:
                     pressure_values: PressureValueList = PressureValueList(
                         self.__class__.number_of_pressure_sensors, pressure_sensor_data_type)
                     for i in range(self.__class__.number_of_pressure_sensors):
@@ -187,7 +187,7 @@ class BaseUkatonMission(abc.ABC):
                         else:
                             value = get_uint_16(data, byte_offset)
                             byte_offset += 2
-                        x, y = get_pressure_position(i, self.device_type)
+                        (x, y) = get_pressure_position(i, self.device_type)
                         pressure_values[i] = PressureValue(x, y, value)
 
                     pressure_values.update()
@@ -196,7 +196,7 @@ class BaseUkatonMission(abc.ABC):
                     self.pressure_data_event_dispatcher.dispatch(
                         PressureDataEventType.PRESSURE, pressure_values)
                     self.pressure_data_event_dispatcher.dispatch(
-                        PressureDataEventType.CENTER_OF_MASS, pressure_values.center_of_mass_send_sensor_data_configuration)
+                        PressureDataEventType.CENTER_OF_MASS, pressure_values.center_of_mass)
                     self.pressure_data_event_dispatcher.dispatch(
                         PressureDataEventType.MASS, pressure_values.mass)
                     self.pressure_data_event_dispatcher.dispatch(
@@ -209,21 +209,21 @@ class BaseUkatonMission(abc.ABC):
                     logger.debug(f"center_of_mass: {center_of_mass}")
                     byte_offset += 4 * 2
                     self.pressure_data_event_dispatcher.dispatch(
-                        PressureDataEventType.CENTER_OF_MASS, pressure_values)
+                        PressureDataEventType.CENTER_OF_MASS, center_of_mass)
                 case PressureDataType.MASS:
                     mass = get_uint_32(data, byte_offset) * scalar
                     logger.debug(f"mass: {mass}")
                     self.pressure_data[pressure_sensor_data_type] = mass
                     byte_offset += 4
                     self.pressure_data_event_dispatcher.dispatch(
-                        PressureDataEventType.MASS, pressure_values)
+                        PressureDataEventType.MASS, mass)
                 case PressureDataType.HEEL_TO_TOE:
                     heel_to_toe = 1 - get_float_64(data, byte_offset)
                     logger.debug(f"heel_to_toe: {heel_to_toe}")
                     self.pressure_data[pressure_sensor_data_type] = heel_to_toe
                     byte_offset += 8
                     self.pressure_data_event_dispatcher.dispatch(
-                        PressureDataEventType.HEEL_TO_TOE, pressure_values)
+                        PressureDataEventType.HEEL_TO_TOE, heel_to_toe)
                 case _:
                     logger.debug(
                         f'undefined pressure_sensor_data_type: {pressure_sensor_data_type}')

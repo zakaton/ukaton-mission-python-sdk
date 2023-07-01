@@ -35,12 +35,15 @@ async def main():
     logger.debug("enabling sensor data...")
     await ukaton_mission.set_sensor_data_configuration({
         SensorType.MOTION: {
-            MotionDataType.QUATERNION: 20,
+            # MotionDataType.QUATERNION: 20,
+        },
+        SensorType.PRESSURE: {
+            PressureDataType.CENTER_OF_MASS: 20,
         }
     })
     logger.debug("enabled sensor data!")
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
     await ukaton_mission.disconnect()
     logger.debug("end of main ;)")
 
