@@ -6,7 +6,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-from UkatonMissionSDK import BLEUkatonMission, ConnectionEventType
+from UkatonMissionSDK import BLEUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType
 ukaton_mission = BLEUkatonMission()
 
 import asyncio
@@ -27,10 +27,21 @@ async def main():
         ConnectionEventType.DISCONNECTED, on_disconnection)
 
     await ukaton_mission.connect("missionDevice")
-    # FILL - trigger callbacks...
+
+    logger.debug("triggering vibration...")
+    await ukaton_mission.vibrate_waveform([1, 2, 3])
+    logger.debug("triggered vibration!")
+
+    logger.debug("enabling sensor data...")
+    await ukaton_mission.set_sensor_data_configuration({
+        SensorType.MOTION: {
+            MotionDataType.QUATERNION: 20,
+        }
+    })
+    logger.debug("enabled sensor data!")
+
     await asyncio.sleep(3)
     await ukaton_mission.disconnect()
-    await asyncio.sleep(3)
     logger.debug("end of main ;)")
 
 asyncio.run(main())

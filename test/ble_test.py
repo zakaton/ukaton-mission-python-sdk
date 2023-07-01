@@ -48,7 +48,7 @@ async def run(loop):
         await client.write_gatt_char(sensor_data_configuration_characteristic_uuid, bytearray([0, 3, 5, 20, 0]), True)
         logger.debug("enabled sensor data")
         # await client.stop_notify(sensor_data_characteristic_uuid)
-        await asyncio.sleep(10.0, loop=loop)
+        await asyncio.sleep(1.0)
 
 
 loop = asyncio.get_event_loop()

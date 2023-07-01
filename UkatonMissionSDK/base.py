@@ -46,6 +46,7 @@ class BaseUkatonMission(abc.ABC):
             PressureDataType.HEEL_TO_TOE: Vector2(),
         }
         self._last_time_received_sensor_data: int = 0
+        self._last_raw_sensor_data_timestamp: int = 0
         self._sensor_data_timestamp_offset: int = 0
 
     def _connection_handler(self):
@@ -70,20 +71,20 @@ class BaseUkatonMission(abc.ABC):
         self.device_type = DeviceType(data[0])
         logger.debug(f"device_type: {self.device_type.name}")
 
-    def set_sensor_data_configuration(self, sensor_data_configuration: dict[str, dict[str, int]]):
+    async def set_sensor_data_configuration(self, sensor_data_configuration: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
         serialized_sensor_data_configuration = serialize_sensor_data_configuration(
             sensor_data_configuration)
-        self._send_sensor_data_configuration(
+        await self._send_sensor_data_configuration(
             serialized_sensor_data_configuration)
 
     @abc.abstractmethod
-    def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
+    async def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
         raise NotImplementedError()
 
     def parse_sensor_data(self, data: bytearray, byte_offset: int = 0) -> int:
         self._last_time_received_sensor_data = time.time()
         raw_timestamp = get_uint_16(data, byte_offset)
-        if raw_timestamp < self._last_time_received_sensor_data:
+        if raw_timestamp < self._last_raw_sensor_data_timestamp:
             self._sensor_data_timestamp_offset += 2 ** 16
         self._last_raw_sensor_data_timestamp = raw_timestamp
         timestamp = raw_timestamp + self._sensor_data_timestamp_offset
@@ -105,7 +106,7 @@ class BaseUkatonMission(abc.ABC):
         byte_offset += 1
         logger.debug(f"data_size: {data_size}")
 
-        final_byte_offset = byte_offset + final_byte_offset
+        final_byte_offset = byte_offset + data_size
 
         match sensor_type:
             case SensorType.MOTION:
@@ -129,25 +130,25 @@ class BaseUkatonMission(abc.ABC):
 
             match motion_sensor_data_type:
                 case MotionDataType.ACCELERATION, MotionDataType.GRAVITY, MotionDataType.LINEAR_ACCELERATION, MotionDataType.MAGNETOMETER:
-                    byte_offset += 6
                     vector = parse_motion_vector(
                         data, byte_offset, scalar, self.device_type)
+                    byte_offset += 6
                     logger.debug(f"vector: {vector}")
                     self.motion_data[motion_sensor_data_type] = vector
                     self.motion_data_event_dispatcher.dispatch(
                         MotionDataEventType(motion_sensor_data_type), vector)
                 case MotionDataType.ROTATION_RATE:
-                    byte_offset += 6
                     euler = parse_motion_euler(
                         data, byte_offset, scalar, self.device_type)
+                    byte_offset += 6
                     logger.debug(f"euler: {euler}")
                     self.motion_data[motion_sensor_data_type] = euler
                     self.motion_data_event_dispatcher.dispatch(
                         MotionDataEventType(motion_sensor_data_type), euler)
                 case MotionDataType.QUATERNION:
-                    byte_offset += 8
                     quat = parse_motion_quaternion(
                         data, byte_offset, scalar, self.device_type)
+                    byte_offset += 8
                     self.motion_data[motion_sensor_data_type] = quat
                     logger.debug(f"quat: {quat}")
                     self.motion_data_event_dispatcher.dispatch(
@@ -229,23 +230,21 @@ class BaseUkatonMission(abc.ABC):
 
         return byte_offset
 
-    def vibrate_waveform(self, waveform: list[int]):
+    async def vibrate_waveform(self, waveform: list[int]):
         vibration = bytearray([VibrationType.WAVEFORM, *waveform])
-        self._send_vibration(vibration)
+        await self._send_vibration(vibration)
 
-    def vibrate_sequence(self, sequence: list[int]):
+    async def vibrate_sequence(self, sequence: list[int]):
         is_sequence_odd = len(sequence) % 2 == 1
         if is_sequence_odd:
             sequence = sequence[0:-1]
         sequence = list(
             map(self._format_vibration_sequence, enumerate(sequence)))
-        print(sequence)
         vibration = bytearray([VibrationType.SEQUENCE, *sequence])
-        self._send_vibration(vibration)
+        await self._send_vibration(vibration)
 
     def _format_vibration_sequence(self, pair):
         index, value = pair
-        print(index, value)
         is_index_odd = index % 2 == 1
         if is_index_odd:
             value = math.floor(value / 10)

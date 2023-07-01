@@ -6,6 +6,12 @@ import math
 import numpy as np
 import quaternion
 
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger("parsers")
+logger.setLevel(logging.DEBUG)
+
 
 @dataclass
 class Vector2:
@@ -135,6 +141,7 @@ def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Un
             serialized_configuration.append(sensor_type)
             serialized_configuration.append(len(_serialized_configuration))
             serialized_configuration += _serialized_configuration
+    logger.debug(f"serialized_configuration: {serialized_configuration}")
     return serialized_configuration
 
 
