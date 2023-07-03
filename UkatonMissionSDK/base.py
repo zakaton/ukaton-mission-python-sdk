@@ -60,7 +60,7 @@ class BaseUkatonMission(abc.ABC):
             ConnectionEventType.DISCONNECTED)
 
     @abc.abstractmethod
-    async def connect(self, identifier: str):
+    async def connect(self, device_identifier: str):
         raise NotImplementedError()
 
     @abc.abstractmethod

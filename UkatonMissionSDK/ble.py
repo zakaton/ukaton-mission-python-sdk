@@ -5,7 +5,6 @@ from typing import Optional
 from UkatonMissionSDK.enumerations import *
 
 import logging
-
 logging.basicConfig()
 logger = logging.getLogger("BLEUkatonMission")
 logger.setLevel(logging.DEBUG)

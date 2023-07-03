@@ -1,13 +1,26 @@
 import sys
 sys.path.append(".")
 
+from typing import Union
+
 import logging
 logging.basicConfig()
-logger = logging.getLogger("ble example")
+logger = logging.getLogger("basic")
 logger.setLevel(logging.DEBUG)
 
-from UkatonMissionSDK import BLEUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType
-ukaton_mission = BLEUkatonMission()
+from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType
+
+use_ble = True
+device_name = "missionDevice"
+device_ip_address = "0.0.0.0"
+device_identifier = device_name if use_ble else device_ip_address
+
+ukaton_mission: Union[None, BLEUkatonMission, UDPUkatonMission] = None
+if use_ble:
+    ukaton_mission = BLEUkatonMission()
+else:
+    ukaton_mission = UDPUkatonMission()
+
 
 import asyncio
 
@@ -26,7 +39,7 @@ async def main():
     ukaton_mission.connection_event_dispatcher.add_event_listener(
         ConnectionEventType.DISCONNECTED, on_disconnection)
 
-    await ukaton_mission.connect("missionDevice")
+    await ukaton_mission.connect(device_identifier)
 
     logger.debug("triggering vibration...")
     await ukaton_mission.vibrate_waveform([1, 2, 3])

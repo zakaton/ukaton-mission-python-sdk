@@ -1,9 +1,14 @@
 udp
-  connection/disconnection
   parse messages
-  send messages
-  events
-  test
+  device type
+  sensor data
+  haptics
+examples
+  udp
+  basic (ble and udp)
+  motion viz
+  pressure viz
+  3D viz
 blender
   integrate
   fix orientations
