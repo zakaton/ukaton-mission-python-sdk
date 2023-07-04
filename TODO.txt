@@ -1,9 +1,7 @@
 examples
-  udp
-  basic (ble and udp)
-  motion viz
-  pressure viz
-  3D viz
+  graph
+  pressure
+  3D
 blender
   integrate
   fix orientations

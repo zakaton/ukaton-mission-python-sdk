@@ -70,7 +70,6 @@ class PressureValue(Vector2):
     raw_value: float = 0
     normalized_value: float = 0
 
-
 class PressureValueList(List[PressureValue]):
     def __init__(self, size: int = 0, pressure_data_type: PressureDataType = PressureDataType.PRESSURE_SINGLE_BYTE):
         super().__init__([PressureValue() for _ in range(size)])

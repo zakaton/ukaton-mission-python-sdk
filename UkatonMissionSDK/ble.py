@@ -72,4 +72,4 @@ class BLEUkatonMission(BaseUkatonMission):
 
 
 class BLEUkatonMissions(BaseUkatonMissions):
-    pass
+    UkatonMission = BLEUkatonMission

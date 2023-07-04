@@ -8,7 +8,7 @@ logging.basicConfig()
 logger = logging.getLogger("basic")
 logger.setLevel(logging.DEBUG)
 
-from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType
+from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions
 
 use_ble = False
 device_name = "missionDevice"
@@ -48,15 +48,15 @@ async def main():
     logger.debug("enabling sensor data...")
     await ukaton_mission.set_sensor_data_configuration({
         SensorType.MOTION: {
-            # MotionDataType.QUATERNION: 20,
+            MotionDataType.QUATERNION: 20,
         },
         SensorType.PRESSURE: {
-            PressureDataType.CENTER_OF_MASS: 20,
+            # PressureDataType.CENTER_OF_MASS: 20,
         }
     })
     logger.debug("enabled sensor data!")
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(5)
 
     logger.debug("disconnecting...")
     await ukaton_mission.disconnect()

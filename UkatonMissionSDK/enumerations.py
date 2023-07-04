@@ -1,4 +1,4 @@
-from enum import IntEnum, auto
+from enum import StrEnum, IntEnum, auto
 
 
 class ConnectionEventType(IntEnum):
@@ -75,3 +75,7 @@ class UDPMessageType(IntEnum):
     SENSOR_DATA = auto()
 
     VIBRATION = auto()
+
+class InsoleSide(StrEnum):
+    LEFT = "left"
+    RIGHT = "right"

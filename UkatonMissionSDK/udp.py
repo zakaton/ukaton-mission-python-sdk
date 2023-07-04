@@ -133,4 +133,4 @@ class UDPUkatonMission(BaseUkatonMission):
 
 
 class UDPUkatonMissions(BaseUkatonMissions):
-    pass
+    UkatonMission = UDPUkatonMission
