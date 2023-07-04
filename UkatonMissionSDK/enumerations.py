@@ -73,3 +73,5 @@ class UDPMessageType(IntEnum):
     SET_SENSOR_DATA_CONFIGURATIONS = auto()
 
     SENSOR_DATA = auto()
+
+    VIBRATION = auto()

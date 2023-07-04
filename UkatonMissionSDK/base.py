@@ -67,9 +67,17 @@ class BaseUkatonMission(abc.ABC):
     async def disconnect(self):
         raise NotImplementedError()
 
-    def parse_device_type_data(self, data: bytearray):
-        self.device_type = DeviceType(data[0])
+    def parse_device_type_data(self, data: bytearray, byte_offset: int = 0) -> int:
+        self.device_type = DeviceType(data[byte_offset])
+        byte_offset += 1
         logger.debug(f"device_type: {self.device_type.name}")
+        return byte_offset
+
+    def parse_battery_level_data(self, data: bytearray, byte_offset: int = 0) -> int:
+        self.battery_level = data[byte_offset]
+        byte_offset += 1
+        logger.debug(f"battery_level: {self.battery_level}")
+        return byte_offset
 
     async def set_sensor_data_configuration(self, sensor_data_configuration: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
         serialized_sensor_data_configuration = serialize_sensor_data_configuration(

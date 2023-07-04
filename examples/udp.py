@@ -39,7 +39,7 @@ async def main():
             # MotionDataType.QUATERNION: 20,
         },
         SensorType.PRESSURE: {
-            PressureDataType.CENTER_OF_MASS: 20,
+            # PressureDataType.CENTER_OF_MASS: 20,
         }
     })
     logger.debug("enabled sensor data!")
