@@ -1,4 +1,5 @@
 from enum import StrEnum, IntEnum, auto
+from typing import Union
 
 
 class ConnectionEventType(IntEnum):
@@ -52,6 +53,10 @@ class PressureDataType(IntEnum):
     HEEL_TO_TOE = auto()
 
 
+SensorDataType = Union[MotionDataType, PressureDataType]
+SensorDataEventType = Union[MotionDataEventType, PressureDataEventType]
+
+
 class VibrationType(IntEnum):
     WAVEFORM = 0
     SEQUENCE = auto()
@@ -76,6 +81,14 @@ class UDPMessageType(IntEnum):
 
     VIBRATION = auto()
 
+
 class InsoleSide(StrEnum):
     LEFT = "left"
     RIGHT = "right"
+
+
+def sensor_data_type_to_sensor_data_event_type(sensor_type: SensorType, sensor_data_type: SensorDataType):
+    if sensor_type is SensorType.MOTION:
+        return MotionDataEventType(sensor_data_type)
+    else:
+        return PressureDataEventType(max(sensor_data_type - 1, 0))

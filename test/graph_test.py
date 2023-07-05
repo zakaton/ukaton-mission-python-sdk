@@ -1,59 +1,64 @@
+import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import random
-import time
+import matplotlib.animation as animation
 
-
-class RealtimeGraph:
-    def __init__(self, num_curves=3):
-        self.num_curves = num_curves
-        self.data = [[] for _ in range(num_curves)]
-        self.fig, self.ax = plt.subplots()
-        self.lines = [self.ax.plot(
-            [], [], label=f"Curve {i+1}")[0] for i in range(num_curves)]
-        self.ax.legend()
-        self.animation = None
-
-    def append_data(self, new_data):
-        for i, d in enumerate(new_data):
-            self.data[i].append(d)
-
-    def update_graph(self, frame):
-        for i, line in enumerate(self.lines):
-            line.set_data(range(len(self.data[i])), self.data[i])
-        self.ax.relim()
-        self.ax.autoscale_view()
-        return self.lines
-
-    def start_animation(self):
-        self.animation = FuncAnimation(
-            self.fig, self.update_graph, frames=range(len(self.data[0])),
-            interval=100, blit=True
-        )
-        plt.show()
-
-
-# Example usage
-graph = RealtimeGraph(num_curves=3)
+# Function to generate random data
 
 
 def generate_data():
-    new_data = [random.randint(0, 10) for _ in range(graph.num_curves)]
-    graph.append_data(new_data)
-
-# Generate data every 20 milliseconds
+    return np.random.rand()
 
 
-def data_generation_loop():
-    while True:
-        generate_data()
-        time.sleep(0.02)  # Delay for 20 milliseconds (0.02 seconds)
+# Number of values to display
+N = 100
+
+# Create initial data array
+data = np.zeros(N)
+
+# Create a figure and an axis
+fig, ax = plt.subplots()
+
+# Create an empty line object
+line, = ax.plot([], [])
+
+# Set the axis limits
+ax.set_xlim(0, N)
+ax.set_ylim(0, 1)
+
+# Initialize time
+t = [0]  # Use a mutable object
+
+# Function to update the plot
 
 
-# Start the animation
-graph.start_animation()
+def update_plot(frame):
+    t[0] += 20  # Increment time
 
-# Start the data generation loop in a separate thread
-import threading
-data_thread = threading.Thread(target=data_generation_loop)
-data_thread.start()
+    # Update the data array with new value
+    data[:-1] = data[1:]
+    data[-1] = generate_data()
+
+    # Update the line data
+    line.set_data(np.arange(N), data)
+
+    return line,
+
+# Function to initialize the plot
+
+
+def init():
+    # Update the x-axis labels
+    num_ticks = 5  # Number of desired ticks
+    tick_positions = np.linspace(0, N - 1, num_ticks, dtype=int)
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels([str(t[0] - (N - i - 1) * 20) for i in tick_positions])
+
+    return line,
+
+
+# Create the animation
+ani = animation.FuncAnimation(
+    fig, update_plot, init_func=init, frames=200, interval=20, blit=True)
+
+# Show the plot
+plt.show()

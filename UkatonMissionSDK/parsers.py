@@ -169,8 +169,8 @@ def get_pressure_position(index: int, device_type: DeviceType) -> Vector2:
 
 PressureDataConfiguration = dict[PressureDataType, int]
 MotionDataConfiguration = dict[MotionDataType, int]
-SensorDataConfigurations = dict[SensorType,
-                                Union[MotionDataConfiguration, PressureDataConfiguration]]
+SensorDataConfiguration = Union[MotionDataConfiguration, PressureDataConfiguration]
+SensorDataConfigurations = dict[SensorType, SensorDataConfiguration]
 
 
 def serialize_sensor_data_configurations(configurations: SensorDataConfigurations) -> bytearray:
