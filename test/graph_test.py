@@ -1,37 +1,59 @@
-import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-import numpy as np
+from matplotlib.animation import FuncAnimation
+import random
+import time
 
-# Function to update the graph with new data
-def update_graph(x, y, lines):
-    for i, line in enumerate(lines):
-        line.set_data(x, y[i])
-    plt.draw()
 
-# Generate random data
-num_lines = 5
-num_points = 100
-x = np.linspace(0, 1, num_points)
-y = np.random.rand(num_lines, num_points)
+class RealtimeGraph:
+    def __init__(self, num_curves=3):
+        self.num_curves = num_curves
+        self.data = [[] for _ in range(num_curves)]
+        self.fig, self.ax = plt.subplots()
+        self.lines = [self.ax.plot(
+            [], [], label=f"Curve {i+1}")[0] for i in range(num_curves)]
+        self.ax.legend()
+        self.animation = None
 
-# Initialize the plot
-plt.ion()
-fig, ax = plt.subplots()
+    def append_data(self, new_data):
+        for i, d in enumerate(new_data):
+            self.data[i].append(d)
 
-# Create an empty list to store line objects
-lines = []
+    def update_graph(self, frame):
+        for i, line in enumerate(self.lines):
+            line.set_data(range(len(self.data[i])), self.data[i])
+        self.ax.relim()
+        self.ax.autoscale_view()
+        return self.lines
 
-# Create line objects and plot the initial data
-for i in range(num_lines):
-    line, = ax.plot(x, y[i])
-    lines.append(line)
+    def start_animation(self):
+        self.animation = FuncAnimation(
+            self.fig, self.update_graph, frames=range(len(self.data[0])),
+            interval=100, blit=True
+        )
+        plt.show()
 
-# Continuously update the graph with new data
-while True:
-    # Generate new random data
-    y = np.random.rand(num_lines, num_points)
 
-    # Update the graph
-    update_graph(x, y, lines)
-    plt.pause(0.001)
+# Example usage
+graph = RealtimeGraph(num_curves=3)
+
+
+def generate_data():
+    new_data = [random.randint(0, 10) for _ in range(graph.num_curves)]
+    graph.append_data(new_data)
+
+# Generate data every 20 milliseconds
+
+
+def data_generation_loop():
+    while True:
+        generate_data()
+        time.sleep(0.02)  # Delay for 20 milliseconds (0.02 seconds)
+
+
+# Start the animation
+graph.start_animation()
+
+# Start the data generation loop in a separate thread
+import threading
+data_thread = threading.Thread(target=data_generation_loop)
+data_thread.start()

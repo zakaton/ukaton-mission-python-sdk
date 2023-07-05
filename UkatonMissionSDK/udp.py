@@ -123,7 +123,7 @@ class UDPUkatonMission(BaseUkatonMission):
             # logger.debug(f"socket error: {e}")
             pass
 
-    async def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
+    async def _send_sensor_data_configurations(self, serialized_sensor_data_configuration: bytearray):
         self.send_message(bytearray([UDPMessageType.SET_SENSOR_DATA_CONFIGURATIONS, len(
             serialized_sensor_data_configuration), *serialized_sensor_data_configuration]))
 

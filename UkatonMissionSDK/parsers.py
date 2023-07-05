@@ -70,6 +70,7 @@ class PressureValue(Vector2):
     raw_value: float = 0
     normalized_value: float = 0
 
+
 class PressureValueList(List[PressureValue]):
     def __init__(self, size: int = 0, pressure_data_type: PressureDataType = PressureDataType.PRESSURE_SINGLE_BYTE):
         super().__init__([PressureValue() for _ in range(size)])
@@ -112,10 +113,10 @@ class PressureValueList(List[PressureValue]):
         self._update_mass()
 
 
-def default_1(): return 1
+def return_1(): return 1
 
 
-motion_data_scalars: dict[MotionDataType, float] = defaultdict(default_1, {
+motion_data_scalars: dict[MotionDataType, float] = defaultdict(return_1, {
     MotionDataType.ACCELERATION: 2 ** -8,
     MotionDataType.GRAVITY: 2 ** -8,
     MotionDataType.LINEAR_ACCELERATION: 2 ** -8,
@@ -123,7 +124,7 @@ motion_data_scalars: dict[MotionDataType, float] = defaultdict(default_1, {
     MotionDataType.MAGNETOMETER: 2 ** -4,
     MotionDataType.QUATERNION: 2 ** -14
 })
-pressure_data_scalars: dict[PressureDataType, float] = defaultdict(default_1, {
+pressure_data_scalars: dict[PressureDataType, float] = defaultdict(return_1, {
     PressureDataType.PRESSURE_SINGLE_BYTE: 1 / 2 ** 8,
     PressureDataType.PRESSURE_DOUBLE_BYTE: 1 / 2 ** 12,
     PressureDataType.MASS: 1 / 2 ** 16,
@@ -166,23 +167,29 @@ def get_pressure_position(index: int, device_type: DeviceType) -> Vector2:
     return Vector2(x, y)
 
 
-def serialize_sensor_data_configuration(configurations: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]) -> bytearray:
-    serialized_configuration = bytearray()
+PressureDataConfiguration = dict[PressureDataType, int]
+MotionDataConfiguration = dict[MotionDataType, int]
+SensorDataConfigurations = dict[SensorType,
+                                Union[MotionDataConfiguration, PressureDataConfiguration]]
+
+
+def serialize_sensor_data_configurations(configurations: SensorDataConfigurations) -> bytearray:
+    serialized_configurations = bytearray()
     for sensor_type in configurations:
-        _serialized_configuration = bytearray()
+        _serialized_configurations = bytearray()
         configuration = configurations[sensor_type]
         for data_type in configuration:
-            _serialized_configuration.append(data_type)
+            _serialized_configurations.append(data_type)
             data_rate = configuration[data_type]
-            _serialized_configuration += data_rate.to_bytes(
+            _serialized_configurations += data_rate.to_bytes(
                 2, byteorder="little")
-        size = len(_serialized_configuration)
+        size = len(_serialized_configurations)
         if size > 0:
-            serialized_configuration.append(sensor_type)
-            serialized_configuration.append(len(_serialized_configuration))
-            serialized_configuration += _serialized_configuration
-    logger.debug(f"serialized_configuration: {serialized_configuration}")
-    return serialized_configuration
+            serialized_configurations.append(sensor_type)
+            serialized_configurations.append(len(_serialized_configurations))
+            serialized_configurations += _serialized_configurations
+    logger.debug(f"serialized_configurations: {serialized_configurations}")
+    return serialized_configurations
 
 
 def parse_motion_vector(data: bytearray, byte_offset: int = 0, scalar: float = 1, device_type: DeviceType = DeviceType.MOTION_MODULE) -> Vector3:

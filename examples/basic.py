@@ -8,9 +8,9 @@ logging.basicConfig()
 logger = logging.getLogger("basic")
 logger.setLevel(logging.DEBUG)
 
-from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions
+from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations
 
-use_ble = False
+use_ble = True
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -46,23 +46,25 @@ async def main():
     logger.debug("triggered vibration!")
 
     logger.debug("enabling sensor data...")
-    await ukaton_mission.set_sensor_data_configuration({
+    sensor_data_configurations: SensorDataConfigurations = {
         SensorType.MOTION: {
             MotionDataType.QUATERNION: 20,
         },
         SensorType.PRESSURE: {
             # PressureDataType.CENTER_OF_MASS: 20,
         }
-    })
+    }
+    await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
+
     logger.debug("enabled sensor data!")
 
-    await asyncio.sleep(5)
+    await asyncio.sleep(3)
 
     logger.debug("disconnecting...")
     await ukaton_mission.disconnect()
     logger.debug("disconnected")
 
-    await asyncio.sleep(5)
+    await asyncio.sleep(1)
     logger.debug("end of main ;)")
 
 asyncio.run(main())

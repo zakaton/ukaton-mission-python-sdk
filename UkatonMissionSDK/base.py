@@ -50,11 +50,11 @@ class BaseUkatonMission(abc.ABC):
         self._last_time_received_sensor_data: int = 0
         self._last_raw_sensor_data_timestamp: int = 0
         self._sensor_data_timestamp_offset: int = 0
-    
+
     @property
     def is_insole(self) -> bool:
         return self.device_type is not DeviceType.MOTION_MODULE
-    
+
     @property
     def insole_side(self) -> InsoleSide:
         return InsoleSide.RIGHT if self.device_type is DeviceType.RIGHT_INSOLE else InsoleSide.LEFT
@@ -89,14 +89,14 @@ class BaseUkatonMission(abc.ABC):
         logger.debug(f"battery_level: {self.battery_level}")
         return byte_offset
 
-    async def set_sensor_data_configuration(self, sensor_data_configuration: dict[SensorType, dict[Union[MotionDataType, PressureDataType], int]]):
-        serialized_sensor_data_configuration = serialize_sensor_data_configuration(
-            sensor_data_configuration)
-        await self._send_sensor_data_configuration(
-            serialized_sensor_data_configuration)
+    async def set_sensor_data_configurations(self, sensor_data_configurations: SensorDataConfigurations):
+        serialized_sensor_data_configurations = serialize_sensor_data_configurations(
+            sensor_data_configurations)
+        await self._send_sensor_data_configurations(
+            serialized_sensor_data_configurations)
 
     @abc.abstractmethod
-    async def _send_sensor_data_configuration(self, serialized_sensor_data_configuration: bytearray):
+    async def _send_sensor_data_configurations(self, serialized_sensor_data_configurations: bytearray):
         raise NotImplementedError()
 
     def parse_sensor_data(self, data: bytearray, byte_offset: int = 0) -> int:
@@ -274,14 +274,13 @@ class BaseUkatonMission(abc.ABC):
         raise NotImplementedError()
 
 
-
-
 class BaseUkatonMissions(abc.ABC):
     UkatonMission: type[BaseUkatonMission]
 
     class MissionsPressureData:
         sum: float = 0
-        mass: dict[InsoleSide, float] = {InsoleSide.LEFT: 0, InsoleSide.RIGHT: 0}
+        mass: dict[InsoleSide, float] = {
+            InsoleSide.LEFT: 0, InsoleSide.RIGHT: 0}
         center_of_mass: Vector2 = Vector2()
 
     def __init__(self):
@@ -290,32 +289,39 @@ class BaseUkatonMissions(abc.ABC):
         self.pressure_data = self.MissionsPressureData()
         self.pressure_data_event_dispatcher: EventDispatcher = EventDispatcher(
             PressureDataEventType)
-        
+
         self.ukaton_missions: dict[InsoleSide, BaseUkatonMission] = {}
         for side in InsoleSide:
             self.ukaton_missions[side] = self.__class__.UkatonMission()
 
         for ukaton_mission in self.ukaton_missions.values():
-            ukaton_mission.pressure_data_event_dispatcher.add_event_listener(PressureDataEventType.PRESSURE, self.update_pressure_data)
-    
+            ukaton_mission.pressure_data_event_dispatcher.add_event_listener(
+                PressureDataEventType.PRESSURE, self.update_pressure_data)
+
     def update_pressure_data(self, pressure_values: PressureValueList, timestamp: int):
         pressure_data = self.MissionsPressureData()
-        ukaton_missions = {side: ukaton_mission for side, ukaton_mission in self.ukaton_missions.items() if ukaton_mission.pressure_values is not None}
+        ukaton_missions = {side: ukaton_mission for side, ukaton_mission in self.ukaton_missions.items(
+        ) if ukaton_mission.pressure_values is not None}
         for ukaton_mission in ukaton_missions.values():
             pressure_data.sum += ukaton_mission.pressure_values.sum
         if pressure_data.sum > 0:
             for side, ukaton_mission in self.ukaton_missions.items():
-                pressure_data.mass[side] = ukaton_mission.pressure_values.sum / pressure_data.sum
+                pressure_data.mass[side] = ukaton_mission.pressure_values.sum / \
+                    pressure_data.sum
             pressure_data.center_of_mass.x = pressure_data.mass[InsoleSide.RIGHT]
 
             pressure_data.center_of_mass.y = 0
             for side, ukaton_mission in self.ukaton_missions.items():
-                pressure_data.center_of_mass.y += ukaton_missions[side].pressure_values.center_of_mass.y * pressure_data.mass[side]
+                pressure_data.center_of_mass.y += ukaton_missions[side].pressure_values.center_of_mass.y * \
+                    pressure_data.mass[side]
             self.pressure_data = pressure_data
-            self.pressure_data_event_dispatcher.dispatch(PressureDataEventType.PRESSURE, pressure_data, timestamp)
+            self.pressure_data_event_dispatcher.dispatch(
+                PressureDataEventType.PRESSURE, pressure_data, timestamp)
 
     def replace_insole(self, ukaton_mission: BaseUkatonMission):
         if ukaton_mission.is_insole and self.ukaton_missions[ukaton_mission.insole_side] is not ukaton_mission:
-            self.ukaton_missions[ukaton_mission.insole_side].pressure_data_event_dispatcher.remove_event_listener(PressureDataEventType.PRESSURE, self.update_pressure_data)
-            ukaton_mission.pressure_data_event_dispatcher.add_event_listener(PressureDataEventType.PRESSURE, self.update_pressure_data)
+            self.ukaton_missions[ukaton_mission.insole_side].pressure_data_event_dispatcher.remove_event_listener(
+                PressureDataEventType.PRESSURE, self.update_pressure_data)
+            ukaton_mission.pressure_data_event_dispatcher.add_event_listener(
+                PressureDataEventType.PRESSURE, self.update_pressure_data)
             self.ukaton_missions[ukaton_mission.insole_side] = ukaton_mission
