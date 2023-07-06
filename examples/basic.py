@@ -21,7 +21,6 @@ if use_ble:
 else:
     ukaton_mission = UDPUkatonMission()
 
-
 import asyncio
 
 
@@ -58,13 +57,11 @@ async def main():
 
     logger.debug("enabled sensor data!")
 
-    await asyncio.sleep(3)
 
-    logger.debug("disconnecting...")
-    await ukaton_mission.disconnect()
-    logger.debug("disconnected")
+def run_main_in_background():
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+    loop.run_forever()
 
-    await asyncio.sleep(1)
-    logger.debug("end of main ;)")
 
-asyncio.run(main())
+run_main_in_background()
