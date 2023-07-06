@@ -14,7 +14,7 @@ import threading
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, PressureDataEventType, SensorDataConfigurations, SensorDataType, EventDispatcher, SensorDataEventType
 
-use_ble = False
+use_ble = True
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -39,12 +39,11 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
 matplotlib.use("TkAgg")
 
 # Number of rows and columns in the grid
-num_rows = 2
-num_cols = 3
+num_rows = 1
+num_cols = 2
 
 fig, axes = plt.subplots(num_rows, num_cols)
 
@@ -75,17 +74,7 @@ N = 20
 data: dict[SensorType: dict[SensorDataEventType: list[Datum]]] = {}
 
 
-def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventType, value: any, timestamp: int):
-    logger.debug(
-        f"[{timestamp}] adding data {sensor_type.name}:{sensor_data_event_type.name}, {value}")
-    datum = Datum(value, timestamp)
-    _data: list[Datum] = data[sensor_type][sensor_data_event_type]
-    _data.append(datum)
-    _data = _data[-N:]
-    print(len(_data))
-
-
-def update(frame):
+def update_plot(frames):
     for i, ax in enumerate(axes.flatten()):
         # Update the data for the curves
         y1_data = y1 + np.random.normal(0, 5, len(x))
@@ -103,6 +92,16 @@ def update(frame):
     return lines
 
 
+def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventType, value: any, timestamp: int):
+    logger.debug(
+        f"[{timestamp}] adding data {sensor_type.name}:{sensor_data_event_type.name}, {value}")
+    datum = Datum(value, timestamp)
+    _data: list[Datum] = data[sensor_type][sensor_data_event_type]
+    _data.append(datum)
+    _data = _data[-N:]
+    print(len(_data))
+
+
 async def main():
     ukaton_mission.connection_event_dispatcher.add_event_listener(
         ConnectionEventType.CONNECTED, on_connection)
@@ -114,7 +113,7 @@ async def main():
     logger.debug("enabling sensor data...")
     sensor_data_configurations: SensorDataConfigurations = {
         SensorType.MOTION: {
-            MotionDataType.QUATERNION: 1000,
+            MotionDataType.QUATERNION: 20,
             # MotionDataType.ACCELERATION: 20,
         },
         SensorType.PRESSURE: {
@@ -141,7 +140,20 @@ async def main():
     logger.debug("enabled sensor data!")
 
 
-ani = FuncAnimation(fig, update, frames=range(100), interval=200)
+def run_main():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(main())
+    loop.run_forever()
 
-plt.show(block=False)
-asyncio.run(main())
+
+main_thread = threading.Thread(target=run_main)
+main_thread.daemon = True
+main_thread.start()
+
+ani = FuncAnimation(fig, update_plot, frames=range(100), interval=20)
+# plt.ion()
+plt.show()
+
+# run_main_in_background()
+main_thread.join()

@@ -10,7 +10,7 @@ import logging
 
 logging.basicConfig()
 logger = logging.getLogger("BaseUkatonMission")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 class BaseUkatonMission(abc.ABC):

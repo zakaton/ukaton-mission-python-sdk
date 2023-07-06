@@ -14,7 +14,7 @@ from typing import Optional
 import logging
 logging.basicConfig()
 logger = logging.getLogger("UDPUkatonMission")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 class UDPUkatonMission(BaseUkatonMission):

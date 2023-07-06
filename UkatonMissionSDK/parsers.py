@@ -11,7 +11,7 @@ import logging
 
 logging.basicConfig()
 logger = logging.getLogger("parsers")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 @dataclass
@@ -169,7 +169,8 @@ def get_pressure_position(index: int, device_type: DeviceType) -> Vector2:
 
 PressureDataConfiguration = dict[PressureDataType, int]
 MotionDataConfiguration = dict[MotionDataType, int]
-SensorDataConfiguration = Union[MotionDataConfiguration, PressureDataConfiguration]
+SensorDataConfiguration = Union[MotionDataConfiguration,
+                                PressureDataConfiguration]
 SensorDataConfigurations = dict[SensorType, SensorDataConfiguration]
 
 
