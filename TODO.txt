@@ -1,9 +1,14 @@
 examples
   raw graph
-    which graphs
-    
+    update data
+    set data range (x, y)
   pressure
+    display insole
+    position markers
+    set opacity
   3D
+    rotate object
+    fix quaternion
 blender
   integrate
   fix orientations
