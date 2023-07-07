@@ -91,6 +91,8 @@ class UDPUkatonMission(BaseUkatonMission):
                         data, byte_offset)
                     if not self._did_receive_device_type:
                         self._did_receive_device_type = True
+                        self.is_connected = True
+                        self._connection_handler()
                         self._receive_device_type_future.get_loop().call_soon_threadsafe(
                             self._receive_device_type_future.set_result, None)
                         self._receive_device_type_future = None

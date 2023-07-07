@@ -1,5 +1,5 @@
 from enum import StrEnum, IntEnum, auto
-from typing import Union
+from typing import Union, Tuple
 
 
 class ConnectionEventType(IntEnum):
@@ -55,6 +55,7 @@ class PressureDataType(IntEnum):
 
 SensorDataType = Union[MotionDataType, PressureDataType]
 SensorDataEventType = Union[MotionDataEventType, PressureDataEventType]
+SensorDataEventTypeTuple = Tuple[SensorType, SensorDataEventType]
 
 
 class VibrationType(IntEnum):

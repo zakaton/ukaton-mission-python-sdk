@@ -1,7 +1,6 @@
 examples
   raw graph
-    update data
-    set data range (x, y)
+    test all data types for graph
   pressure
     display insole
     position markers
