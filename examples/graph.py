@@ -36,20 +36,25 @@ else:
 data_rate = 20
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
-        MotionDataType.ROTATION_RATE: data_rate,
-        MotionDataType.LINEAR_ACCELERATION: data_rate,
+        # MotionDataType.QUATERNION: data_rate,
+        # MotionDataType.ROTATION_RATE: data_rate,
+        # MotionDataType.LINEAR_ACCELERATION: data_rate,
     },
     SensorType.PRESSURE: {
-        # PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
     }
 }
 sensor_data_events: dict[SensorType, list[SensorDataEventType]] = {
     # SensorType.MOTION: list(sensor_data_configurations[SensorType.MOTION].keys()),
     SensorType.MOTION: [
-        MotionDataEventType.ROTATION_RATE,
-        MotionDataEventType.LINEAR_ACCELERATION
+        # MotionDataEventType.EULER,
+        # MotionDataEventType.LINEAR_ACCELERATION,
     ],
-    # SensorType.PRESSURE: [PressureDataEventType.CENTER_OF_MASS]
+    SensorType.PRESSURE: [
+        PressureDataEventType.CENTER_OF_MASS,
+        PressureDataEventType.HEEL_TO_TOE,
+        PressureDataEventType.MASS,
+    ]
 }
 
 N = 100
@@ -89,7 +94,7 @@ def update_plot(frames):
     if ukaton_mission.is_connected:
         for i, ax in enumerate(axes.flatten()):
             if i >= number_of_sensor_data_event_types:
-                break
+                continue
 
             sensor_type, sensor_data_event_type = sensor_data_event_types[i]
             _lines = lines[i]
@@ -116,7 +121,7 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
             values = list(vector3)
         case (SensorType.MOTION, MotionDataEventType.QUATERNION):
             q: np.quaternion = value
-            values = [q.w, q.x, q.y, q.z]
+            values = list(quaternion.as_float_array(q))
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
             vector2: Vector2 = value
             values = list(vector2)
@@ -142,7 +147,7 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
 
 # Number of rows and columns in the grid
 num_rows = 2
-num_cols = 1
+num_cols = 2
 
 
 fig, axes = plt.subplots(num_rows, num_cols, constrained_layout=True)
@@ -172,7 +177,11 @@ for i, ax in enumerate(axes.flatten()):
             line_y, = ax.plot([], [], label='y')
             line_z, = ax.plot([], [], label='z')
             lines_to_append += [line_x, line_y, line_z]
-            ax.set_ylim(-10, 10)
+            match sensor_data_event_type:
+                case MotionDataEventType.MAGNETOMETER:
+                    ax.set_ylim(-100, 100)
+                case _:
+                    ax.set_ylim(-20, 20)
         case (SensorType.MOTION, MotionDataEventType.QUATERNION):
             line_w, = ax.plot([], [], label='w')
             line_x, = ax.plot([], [], label='x')
@@ -181,16 +190,16 @@ for i, ax in enumerate(axes.flatten()):
             lines_to_append += [line_w, line_x, line_y, line_z]
             ax.set_ylim(-1, 1)
         case (SensorType.MOTION, MotionDataEventType.EULER | MotionDataEventType.ROTATION_RATE):
+            line_roll, = ax.plot([], [], label='roll')
             line_yaw, = ax.plot([], [], label='yaw')
             line_pitch, = ax.plot([], [], label='pitch')
-            line_roll, = ax.plot([], [], label='roll')
-            lines_to_append += [line_yaw, line_pitch, line_roll]
+            lines_to_append += [line_roll, line_yaw, line_pitch]
             ax.set_ylim(-2 * np.pi, 2 * np.pi)
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
             line_x, = ax.plot([], [], label='x')
             line_y, = ax.plot([], [], label='y')
             lines_to_append += [line_x, line_y]
-            ax.set_ylim(-1, 1)
+            ax.set_ylim(0, 1)
         case (SensorType.PRESSURE, PressureDataEventType.HEEL_TO_TOE):
             line_heel_to_toe, = ax.plot([], [], label='heel to toe')
             lines_to_append += [line_heel_to_toe]
@@ -214,6 +223,7 @@ async def main():
     await ukaton_mission.connect(device_identifier)
     if ukaton_mission.is_connected:
         logger.info("connected!")
+        logger.info(f"device_type: {ukaton_mission.device_type.name}")
 
         logger.info("enabling sensor data...")
         await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
@@ -231,7 +241,7 @@ main_thread = threading.Thread(target=run_main)
 main_thread.daemon = True
 main_thread.start()
 
-ani = FuncAnimation(fig, update_plot, frames=range(N * 3),
+ani = FuncAnimation(fig, update_plot, frames=None,
                     interval=data_rate / 2)
 # plt.ion()
 plt.show()

@@ -89,7 +89,7 @@ class PressureValueList(List[PressureValue]):
 
     def _update_normalized_values(self):
         for value in self:
-            value.normalized_value = value.normalized_value / self.sum if self.sum > 0 else 0
+            value.normalized_value = value.raw_value / self.sum if self.sum > 0 else 0
 
     def _update_center_of_mass(self):
         x, y = 0, 0

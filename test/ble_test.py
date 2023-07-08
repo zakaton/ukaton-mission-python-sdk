@@ -27,7 +27,7 @@ logger.debug(
 
 
 async def run(loop):
-    if False:
+    if True:
         devices = await BleakScanner.discover()
         for d in devices:
             print(d.name)

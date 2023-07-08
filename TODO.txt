@@ -1,6 +1,6 @@
 examples
   raw graph
-    test all data types for graph
+    fix axes
   pressure
     display insole
     position markers
