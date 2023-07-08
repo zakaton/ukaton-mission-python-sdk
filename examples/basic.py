@@ -32,29 +32,26 @@ def on_disconnection():
     logger.debug("disconnected callback triggered :O")
 
 
-async def main():
-    ukaton_mission.connection_event_dispatcher.add_event_listener(
-        ConnectionEventType.CONNECTED, on_connection)
-    ukaton_mission.connection_event_dispatcher.add_event_listener(
-        ConnectionEventType.DISCONNECTED, on_disconnection)
+ukaton_mission.connection_event_dispatcher.add_event_listener(
+    ConnectionEventType.CONNECTED, on_connection)
+ukaton_mission.connection_event_dispatcher.add_event_listener(
+    ConnectionEventType.DISCONNECTED, on_disconnection)
 
+sensor_data_configurations: SensorDataConfigurations = {
+    SensorType.MOTION: {
+        MotionDataType.QUATERNION: 20,
+    },
+    SensorType.PRESSURE: {
+        # PressureDataType.CENTER_OF_MASS: 20,
+    }
+}
+
+
+async def main():
     await ukaton_mission.connect(device_identifier)
 
-    logger.debug("triggering vibration...")
-    await ukaton_mission.vibrate_waveform([1, 2, 3])
-    logger.debug("triggered vibration!")
-
     logger.debug("enabling sensor data...")
-    sensor_data_configurations: SensorDataConfigurations = {
-        SensorType.MOTION: {
-            MotionDataType.QUATERNION: 20,
-        },
-        SensorType.PRESSURE: {
-            # PressureDataType.CENTER_OF_MASS: 20,
-        }
-    }
     await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
-
     logger.debug("enabled sensor data!")
 
 

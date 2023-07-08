@@ -1,11 +1,11 @@
 examples
+  3D
+    use correct models
+    fix quaternion
   pressure
     display insole
     position markers
     set opacity
-  3D
-    rotate object
-    fix quaternion
 blender
   integrate
   fix orientations
