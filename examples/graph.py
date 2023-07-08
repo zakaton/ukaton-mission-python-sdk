@@ -1,7 +1,7 @@
 import sys
 sys.path.append(".")
 
-from typing import Union, Tuple
+from typing import Union
 from dataclasses import dataclass
 from collections import deque
 
@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 matplotlib.use("TkAgg")
 
-from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, PressureDataEventType, SensorDataConfigurations, SensorDataType, EventDispatcher, SensorDataEventType, SensorDataEventTypeTuple, Vector2, Vector3
+from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, PressureDataEventType, SensorDataConfigurations, SensorDataType, EventDispatcher, SensorDataEventType, SensorDataEventTypeTuple, Vector2, Vector3, PressureValueList, PressureValue
 
 use_ble = True
 device_name = "missionDevice"
@@ -38,24 +38,26 @@ data_rate = 20
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
         # MotionDataType.QUATERNION: data_rate,
-        MotionDataType.ACCELERATION: data_rate,
-        MotionDataType.ROTATION_RATE: data_rate,
+        # MotionDataType.ACCELERATION: data_rate,
+        # MotionDataType.ROTATION_RATE: data_rate,
     },
     SensorType.PRESSURE: {
-        # PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        # PressureDataType.CENTER_OF_MASS: data_rate,
     }
 }
 sensor_data_events: dict[SensorType, list[SensorDataEventType]] = {
     # SensorType.MOTION: list(sensor_data_configurations[SensorType.MOTION].keys()),
     SensorType.MOTION: [
         # MotionDataEventType.EULER,
-        MotionDataEventType.ACCELERATION,
-        MotionDataEventType.ROTATION_RATE,
+        # MotionDataEventType.ACCELERATION,
+        # MotionDataEventType.ROTATION_RATE,
     ],
     SensorType.PRESSURE: [
-        # PressureDataEventType.CENTER_OF_MASS,
-        # PressureDataEventType.HEEL_TO_TOE,
-        # PressureDataEventType.MASS,
+        PressureDataEventType.CENTER_OF_MASS,
+        PressureDataEventType.HEEL_TO_TOE,
+        PressureDataEventType.MASS,
+        PressureDataEventType.PRESSURE,
     ]
 }
 
@@ -126,6 +128,10 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
         case (SensorType.MOTION, MotionDataEventType.QUATERNION):
             q: np.quaternion = value
             values = list(quaternion.as_float_array(q))
+        case (SensorType.PRESSURE, PressureDataEventType.PRESSURE):
+            pressure_value_list: PressureValueList = value
+            for pressure_value in pressure_value_list:
+                values.append(pressure_value.normalized_value)
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
             vector2: Vector2 = value
             values = list(vector2)
@@ -149,7 +155,7 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
 
 # Number of rows and columns in the grid
 num_rows = 2
-num_cols = 1
+num_cols = 2
 
 
 fig, axes = plt.subplots(num_rows, num_cols, constrained_layout=True)
@@ -172,6 +178,7 @@ for i, ax in enumerate(axes.flatten()):
     ax.set_xlim(0, N)
 
     lines_to_append = []
+    show_legend = True
     match (sensor_type, sensor_data_event_type):
         case (SensorType.MOTION, MotionDataEventType.ACCELERATION | MotionDataEventType.LINEAR_ACCELERATION | MotionDataEventType.GRAVITY | MotionDataEventType.MAGNETOMETER | MotionDataEventType.GRAVITY):
             line_x, = ax.plot([], [], label='x')
@@ -196,6 +203,12 @@ for i, ax in enumerate(axes.flatten()):
             line_roll, = ax.plot([], [], label='roll')
             lines_to_append += [line_pitch, line_yaw, line_roll]
             ax.set_ylim(-2 * np.pi, 2 * np.pi)
+        case (SensorType.PRESSURE, PressureDataEventType.PRESSURE):
+            for i in range(0, ukaton_mission.number_of_pressure_sensors):
+                line, = ax.plot([], [], label=f'sensor #{i}')
+                lines_to_append += [line]
+            ax.set_ylim(0, 1)
+            show_legend = False
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
             line_x, = ax.plot([], [], label='x')
             line_y, = ax.plot([], [], label='y')
@@ -217,7 +230,8 @@ for i, ax in enumerate(axes.flatten()):
         lines_data[(sensor_type, sensor_data_event_type)].append(LineData())
     lines.append(lines_to_append)
     all_lines += lines_to_append
-    ax.legend(loc="upper left")
+    if show_legend:
+        ax.legend(loc="upper left")
 
 
 async def main():

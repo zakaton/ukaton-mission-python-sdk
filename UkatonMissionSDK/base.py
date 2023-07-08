@@ -229,6 +229,10 @@ class BaseUkatonMission(abc.ABC):
                     byte_offset += 4 * 2
                     self.pressure_data_event_dispatcher.dispatch(
                         PressureDataEventType.CENTER_OF_MASS, center_of_mass, timestamp)
+                    heel_to_toe = center_of_mass.y
+                    self.pressure_data[PressureDataType.HEEL_TO_TOE] = heel_to_toe
+                    self.pressure_data_event_dispatcher.dispatch(
+                        PressureDataEventType.HEEL_TO_TOE, heel_to_toe, timestamp)
                 case PressureDataType.MASS:
                     mass = get_uint_32(data, byte_offset) * scalar
                     logger.debug(f"mass: {mass}")
@@ -237,7 +241,7 @@ class BaseUkatonMission(abc.ABC):
                     self.pressure_data_event_dispatcher.dispatch(
                         PressureDataEventType.MASS, mass, timestamp)
                 case PressureDataType.HEEL_TO_TOE:
-                    heel_to_toe = 1 - get_float_64(data, byte_offset)
+                    heel_to_toe = get_float_64(data, byte_offset)
                     logger.debug(f"heel_to_toe: {heel_to_toe}")
                     self.pressure_data[pressure_sensor_data_type] = heel_to_toe
                     byte_offset += 8

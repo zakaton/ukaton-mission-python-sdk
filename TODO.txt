@@ -1,6 +1,7 @@
 examples
   3D
-    use correct models
+    import models
+    load model based on device_type
     fix quaternion
   pressure
     display insole

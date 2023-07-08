@@ -68,6 +68,7 @@ class Vector3(Vector2):
 @dataclass
 class PressureValue(Vector2):
     raw_value: float = 0
+    weighted_value: float = 0
     normalized_value: float = 0
 
 
@@ -89,18 +90,22 @@ class PressureValueList(List[PressureValue]):
 
     def _update_normalized_values(self):
         for value in self:
-            value.normalized_value = value.raw_value / self.sum if self.sum > 0 else 0
+            value.normalized_value = value.raw_value * self.scalar
+
+    def _update_weighted_values(self):
+        for value in self:
+            value.weighted_value = value.raw_value / self.sum if self.sum > 0 else 0
 
     def _update_center_of_mass(self):
         x, y = 0, 0
         for value in self:
-            x += value.normalized_value * value.x
-            y += value.normalized_value * value.y
+            x += value.weighted_value * value.x
+            y += value.weighted_value * value.y
         self.center_of_mass.x = x
-        self.center_of_mass.y = y
+        self.center_of_mass.y = 1 - y
 
     def _update_heel_to_toe(self):
-        self.heel_to_toe = 1 - self.center_of_mass.y
+        self.heel_to_toe = self.center_of_mass.y
 
     def _update_mass(self):
         self.mass = self.sum * self.scalar / self.size
@@ -108,6 +113,7 @@ class PressureValueList(List[PressureValue]):
     def update(self):
         self._update_sum()
         self._update_normalized_values()
+        self._update_weighted_values()
         self._update_center_of_mass()
         self._update_heel_to_toe()
         self._update_mass()
