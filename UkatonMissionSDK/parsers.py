@@ -203,12 +203,12 @@ def parse_motion_vector(data: bytearray, byte_offset: int = 0, scalar: float = 1
 
     vector = None
     if device_type == DeviceType.MOTION_MODULE:
-        vector = [-y, z, x]
+        vector = [-y, -z, -x]
     else:
         if device_type == DeviceType.RIGHT_INSOLE:
-            vector = [z, -x, y]
+            vector = [z, x, y]
         else:
-            vector = [-z, -x, -y]
+            vector = [-z, x, -y]
 
     return vector
 
@@ -223,12 +223,12 @@ def parse_motion_euler(data: bytearray, byte_offset: int = 0, scalar: float = 1,
 
     euler = None
     if device_type == DeviceType.MOTION_MODULE:
-        euler = [y, -z, -x]
+        euler = [y, -z, x]
     else:
         if device_type == DeviceType.RIGHT_INSOLE:
-            euler = [-z, x, -y]
+            euler = [-z, -y, -x]
         else:
-            euler = [z, x, y]
+            euler = [z, -y, x]
 
     return euler
 

@@ -3,6 +3,7 @@ sys.path.append(".")
 
 from typing import Union, Tuple
 from dataclasses import dataclass
+from collections import deque
 
 import logging
 logging.basicConfig()
@@ -37,23 +38,24 @@ data_rate = 20
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
         # MotionDataType.QUATERNION: data_rate,
-        # MotionDataType.ROTATION_RATE: data_rate,
-        # MotionDataType.LINEAR_ACCELERATION: data_rate,
+        MotionDataType.ACCELERATION: data_rate,
+        MotionDataType.ROTATION_RATE: data_rate,
     },
     SensorType.PRESSURE: {
-        PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        # PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
     }
 }
 sensor_data_events: dict[SensorType, list[SensorDataEventType]] = {
     # SensorType.MOTION: list(sensor_data_configurations[SensorType.MOTION].keys()),
     SensorType.MOTION: [
         # MotionDataEventType.EULER,
-        # MotionDataEventType.LINEAR_ACCELERATION,
+        MotionDataEventType.ACCELERATION,
+        MotionDataEventType.ROTATION_RATE,
     ],
     SensorType.PRESSURE: [
-        PressureDataEventType.CENTER_OF_MASS,
-        PressureDataEventType.HEEL_TO_TOE,
-        PressureDataEventType.MASS,
+        # PressureDataEventType.CENTER_OF_MASS,
+        # PressureDataEventType.HEEL_TO_TOE,
+        # PressureDataEventType.MASS,
     ]
 }
 
@@ -64,8 +66,10 @@ sensor_data_event_types: list[SensorDataEventTypeTuple] = []
 
 class LineData:
     def __init__(self):
-        self.x: list[float] = [0] * N
-        self.y: list[float] = [0] * N
+        self.x = deque([0.0] * N)
+        self.y = deque([0.0] * N)
+        # self.x: list[float] = [0] * N
+        # self.y: list[float] = [0] * N
 
     def __iter__(self):
         yield self.x
@@ -105,7 +109,7 @@ def update_plot(frames):
                 # line.set_data(line_data[j].x, line_data[j].y)
                 line.set_data(x, line_data[j].y)
 
-    return lines
+    return all_lines
 
 
 def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventType, value: any, timestamp: int):
@@ -138,21 +142,20 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
     for i, value in enumerate(values):
         x, y = line_data_list[i]
         x.append(timestamp)
+        x.popleft()
         y.append(value)
-        x = x[-N:]
-        y = y[-N:]
-        line_data_list[i].x = x
-        line_data_list[i].y = y
+        y.popleft()
 
 
 # Number of rows and columns in the grid
 num_rows = 2
-num_cols = 2
+num_cols = 1
 
 
 fig, axes = plt.subplots(num_rows, num_cols, constrained_layout=True)
 # fig, axes = plt.subplots(number_of_sensor_data_event_types, constrained_layout=True)
 lines = []
+all_lines = []
 
 # Initialize the lines for each subplot
 for i, ax in enumerate(axes.flatten()):
@@ -165,8 +168,6 @@ for i, ax in enumerate(axes.flatten()):
 
     sensor_type, sensor_data_event_type = sensor_data_event_types[i]
     sensor_data_event_type_name = sensor_data_event_type.name.lower()
-    print(
-        f"sensor_data_event_type_name: {sensor_data_event_type_name}")
     ax.set_title(sensor_data_event_type_name)
     ax.set_xlim(0, N)
 
@@ -190,10 +191,10 @@ for i, ax in enumerate(axes.flatten()):
             lines_to_append += [line_w, line_x, line_y, line_z]
             ax.set_ylim(-1, 1)
         case (SensorType.MOTION, MotionDataEventType.EULER | MotionDataEventType.ROTATION_RATE):
-            line_roll, = ax.plot([], [], label='roll')
-            line_yaw, = ax.plot([], [], label='yaw')
             line_pitch, = ax.plot([], [], label='pitch')
-            lines_to_append += [line_roll, line_yaw, line_pitch]
+            line_yaw, = ax.plot([], [], label='yaw')
+            line_roll, = ax.plot([], [], label='roll')
+            lines_to_append += [line_pitch, line_yaw, line_roll]
             ax.set_ylim(-2 * np.pi, 2 * np.pi)
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
             line_x, = ax.plot([], [], label='x')
@@ -215,6 +216,7 @@ for i, ax in enumerate(axes.flatten()):
     for i in range(0, len(lines_to_append)):
         lines_data[(sensor_type, sensor_data_event_type)].append(LineData())
     lines.append(lines_to_append)
+    all_lines += lines_to_append
     ax.legend(loc="upper left")
 
 
@@ -241,8 +243,9 @@ main_thread = threading.Thread(target=run_main)
 main_thread.daemon = True
 main_thread.start()
 
+
 ani = FuncAnimation(fig, update_plot, frames=None,
-                    interval=data_rate / 2)
+                    interval=data_rate / 2, blit=True)
 # plt.ion()
 plt.show()
 

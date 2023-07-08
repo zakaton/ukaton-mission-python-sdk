@@ -1,6 +1,4 @@
 examples
-  raw graph
-    fix axes
   pressure
     display insole
     position markers
