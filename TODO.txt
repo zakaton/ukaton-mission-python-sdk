@@ -1,6 +1,5 @@
 examples
   3D
-    import models
     load model based on device_type
     fix quaternion
   pressure

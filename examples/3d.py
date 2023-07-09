@@ -6,14 +6,14 @@ from typing import Union
 import logging
 logging.basicConfig()
 logger = logging.getLogger("3d")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 import trimesh
 import pyrender
 import numpy as np
 import quaternion as Quaternion
 
-from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations
+from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations, DeviceType
 
 use_ble = True
 device_name = "missionDevice"
@@ -37,7 +37,7 @@ sensor_data_configurations: SensorDataConfigurations = {
 
 
 def on_quaternion_data(quaternion: np.quaternion, timestamp: int):
-    # print(f"[{timestamp}]: {quaternion}")
+    logger.debug(f"[{timestamp}]: {quaternion}")
     rotate_scene(quaternion)
 
 
@@ -47,9 +47,8 @@ ukaton_mission.motion_data_event_dispatcher.add_event_listener(
 
 def rotate_scene(quaternion):
     quaternion_array = Quaternion.as_float_array(quaternion)
-    print(f"before: {quaternion}, after: {quaternion_array}")
     viewer.render_lock.acquire()
-    for node in scene.nodes:
+    for i, node in enumerate(scene.mesh_nodes):
         if hasattr(node, 'rotation'):
             node.rotation = quaternion_array
     viewer.render_lock.release()
@@ -76,10 +75,25 @@ main_thread = threading.Thread(target=run_main)
 main_thread.daemon = True
 main_thread.start()
 
+model_names: dict[DeviceType, str] = {
+    DeviceType.MOTION_MODULE: "motionModule",
+    DeviceType.LEFT_INSOLE: "leftShoe",
+    DeviceType.RIGHT_INSOLE: "rightShoe"
+}
 
-shoe_trimesh = trimesh.load(
-    "/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/shoe.glb")
-scene = pyrender.Scene.from_trimesh_scene(shoe_trimesh)
+
+def add_mesh():
+    model_trimesh = trimesh.load(
+        f"/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/assets/{model_names[ukaton_mission.device_type]}.gltf")
+    model_scene = pyrender.Scene.from_trimesh_scene(model_trimesh)
+    for i, node in enumerate(model_scene.mesh_nodes):
+        scene.add_node(node)
+
+
+ukaton_mission.connection_event_dispatcher.add_event_listener(
+    ConnectionEventType.CONNECTED, add_mesh, True)
+
+scene = pyrender.Scene()
 # change __init__ in viewer.py so it returns before it starts the viewer (after self._is_active = True), so we can access the viewer object. auto_start= and run_in_thread don't work, and this is the only way to make the viewer object accessible for rotate_scene
 viewer = pyrender.Viewer(
     scene, use_raymond_lighting=True)
