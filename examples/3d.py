@@ -6,7 +6,7 @@ from typing import Union
 import logging
 logging.basicConfig()
 logger = logging.getLogger("3d")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 import trimesh
 import pyrender
@@ -97,19 +97,14 @@ def rotate_scene(quaternion):
 
 
 async def main():
-    logger.debug("connecting to device...")
+    logger.info("connecting to device...")
     await ukaton_mission.connect(device_identifier)
+    if ukaton_mission.is_connected:
+        logger.info("connected!")
 
-
-def on_connection():
-    logger.debug("connected!")
-    logger.debug("enabling sensor data...")
-    ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
-    logger.debug("enabled sensor data!")
-
-
-ukaton_mission.connection_event_dispatcher.add_event_listener(
-    ConnectionEventType.CONNECTED, on_connection)
+        logger.info("enabling sensor data...")
+        await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
+        logger.info("enabled sensor data!")
 
 
 def run_main():

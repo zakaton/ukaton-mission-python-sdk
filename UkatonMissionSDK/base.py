@@ -30,6 +30,8 @@ class BaseUkatonMission(abc.ABC):
         self.device_name: str = ""
         self.battery_level: int = 0
 
+        self._sensor_data_configurations: Optional[SensorDataConfigurations] = None
+
         self.motion_data: dict[MotionDataType, Union[Vector3, np.quaternion]] = {
             MotionDataType.ACCELERATION: Vector3(),
             MotionDataType.GRAVITY: Vector3(),
@@ -89,14 +91,15 @@ class BaseUkatonMission(abc.ABC):
         logger.debug(f"battery_level: {self.battery_level}")
         return byte_offset
 
-    def set_sensor_data_configurations(self, sensor_data_configurations: SensorDataConfigurations):
+    async def set_sensor_data_configurations(self, sensor_data_configurations: SensorDataConfigurations):
+        self._sensor_data_configurations = sensor_data_configurations
         serialized_sensor_data_configurations = serialize_sensor_data_configurations(
             sensor_data_configurations)
-        self._send_sensor_data_configurations(
+        await self._send_sensor_data_configurations(
             serialized_sensor_data_configurations)
 
     @abc.abstractmethod
-    def _send_sensor_data_configurations(self, serialized_sensor_data_configurations: bytearray):
+    async def _send_sensor_data_configurations(self, serialized_sensor_data_configurations: bytearray):
         raise NotImplementedError()
 
     def parse_sensor_data(self, data: bytearray, byte_offset: int = 0) -> int:
