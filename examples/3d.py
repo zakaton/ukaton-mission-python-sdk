@@ -12,10 +12,11 @@ import trimesh
 import pyrender
 import numpy as np
 import quaternion as Quaternion
+import math
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations, DeviceType
 
-use_ble = True
+use_ble = False
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -44,13 +45,49 @@ def on_quaternion_data(quaternion: np.quaternion, timestamp: int):
 ukaton_mission.motion_data_event_dispatcher.add_event_listener(
     MotionDataEventType.QUATERNION, on_quaternion_data)
 
+did_save_initial_quaternions = False
+initial_quaternions = []
+
+
+rotate_quaternion_90_deg = trimesh.transformations.quaternion_from_euler(
+    0, 0, -math.pi / 2)
+# pyrender is x-right, z-up, and y-back
+
 
 def rotate_scene(quaternion):
+    global did_add_mesh
+    if not did_add_mesh:
+        return
+
+    global did_save_initial_quaternions
+    global initial_quaternions
+    if not did_save_initial_quaternions and len(scene.mesh_nodes) > 0:
+        for i, node in enumerate(scene.mesh_nodes):
+            if hasattr(node, 'rotation'):
+                x, y, z, w = node.rotation
+                initial_quaternions.append([w, x, y, z])
+        did_save_initial_quaternions = True
+
+    if not did_save_initial_quaternions:
+        return
+
+    # quaternion_array: [w, x, y, z]
     quaternion_array = Quaternion.as_float_array(quaternion)
+    w, x, y, z = quaternion_array
+    quaternion_array = [w, x, -z, y]
+    print(quaternion_array)
     viewer.render_lock.acquire()
     for i, node in enumerate(scene.mesh_nodes):
         if hasattr(node, 'rotation'):
-            node.rotation = quaternion_array
+            initial_quaternion = initial_quaternions[i]
+
+            # trimesh.transformations.quaternion_multiply: [w, x, y, z]
+            q = trimesh.transformations.quaternion_multiply(
+                initial_quaternion, quaternion_array)
+            w, x, y, z = trimesh.transformations.quaternion_multiply(
+                q, rotate_quaternion_90_deg)
+            # node.rotation: [w, x, y, z]
+            node.rotation = [x, y, z, w]
     viewer.render_lock.release()
 
 
@@ -82,12 +119,19 @@ model_names: dict[DeviceType, str] = {
 }
 
 
+did_add_mesh = False
+
+
 def add_mesh():
+    global did_add_mesh
+    if did_add_mesh:
+        return
     model_trimesh = trimesh.load(
         f"/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/assets/{model_names[ukaton_mission.device_type]}.gltf")
     model_scene = pyrender.Scene.from_trimesh_scene(model_trimesh)
     for i, node in enumerate(model_scene.mesh_nodes):
         scene.add_node(node)
+    did_add_mesh = True
 
 
 ukaton_mission.connection_event_dispatcher.add_event_listener(

@@ -1,7 +1,9 @@
 examples
   3D
-    load model based on device_type
-    fix quaternion
+    figure out xyz
+    fix quaternion for motion module
+    fix quaternion for insoles
+  reconnect via udp after disconnect
   pressure
     display insole
     position markers

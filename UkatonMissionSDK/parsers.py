@@ -5,7 +5,7 @@ from collections import defaultdict
 import struct
 import math
 import numpy as np
-import quaternion
+import quaternion as Quaternion
 
 import logging
 
@@ -240,14 +240,14 @@ def parse_motion_euler(data: bytearray, byte_offset: int = 0, scalar: float = 1,
 
 
 insole_correction_quaternions: dict[DeviceType, np.quaternion] = {
-    DeviceType.LEFT_INSOLE: quaternion.from_euler_angles(0, math.pi / 2, -math.pi / 2),
-    DeviceType.RIGHT_INSOLE: quaternion.from_euler_angles(
+    DeviceType.LEFT_INSOLE: Quaternion.from_euler_angles(0, math.pi / 2, -math.pi / 2),
+    DeviceType.RIGHT_INSOLE: Quaternion.from_euler_angles(
         -math.pi / 2, -math.pi / 2, 0)
 }
 correction_quaternions: dict[DeviceType, np.quaternion] = {
-    DeviceType.MOTION_MODULE: quaternion.from_euler_angles(0, -math.pi / 2, 0),
-    DeviceType.LEFT_INSOLE: quaternion.from_euler_angles(0, math.pi, 0),
-    DeviceType.RIGHT_INSOLE: quaternion.from_euler_angles(0, math.pi, 0),
+    DeviceType.MOTION_MODULE: Quaternion.from_euler_angles(0, -math.pi / 2, 0),
+    DeviceType.LEFT_INSOLE: Quaternion.from_euler_angles(0, math.pi, 0),
+    DeviceType.RIGHT_INSOLE: Quaternion.from_euler_angles(0, math.pi, 0),
 }
 
 
@@ -261,11 +261,10 @@ def parse_motion_quaternion(data: bytearray, byte_offset: int = 0, scalar: float
     z = get_int_16(data, byte_offset) * scalar
     byte_offset += 2
 
-    quaternion = np.quaternion(-y, -w, -x, z)
+    quaternion = np.quaternion(z, -y, -w, -x)
     if device_type != DeviceType.MOTION_MODULE:
         quaternion *= insole_correction_quaternions[device_type]
     quaternion *= correction_quaternions[device_type]
-
     return quaternion
 
 

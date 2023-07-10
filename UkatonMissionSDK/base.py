@@ -167,16 +167,17 @@ class BaseUkatonMission(abc.ABC):
                     quat = parse_motion_quaternion(
                         data, byte_offset, scalar, self.device_type)
                     byte_offset += 8
-                    self.motion_data[motion_sensor_data_type] = quat
-                    logger.debug(f"quat: {quat}")
-                    self.motion_data_event_dispatcher.dispatch(
-                        MotionDataEventType(motion_sensor_data_type), quat, timestamp)
+                    if quat.norm() > 0:
+                        self.motion_data[motion_sensor_data_type] = quat
+                        logger.debug(f"quat: {quat}")
+                        self.motion_data_event_dispatcher.dispatch(
+                            MotionDataEventType(motion_sensor_data_type), quat, timestamp)
 
-                    euler = quaternion.as_euler_angles(quat)
-                    self.motion_data[MotionDataType.EULER] = euler
-                    logger.debug(f"euler: {euler}")
-                    self.motion_data_event_dispatcher.dispatch(
-                        MotionDataEventType.EULER, euler, timestamp)
+                        euler = quaternion.as_euler_angles(quat)
+                        self.motion_data[MotionDataType.EULER] = euler
+                        logger.debug(f"euler: {euler}")
+                        self.motion_data_event_dispatcher.dispatch(
+                            MotionDataEventType.EULER, euler, timestamp)
 
                 case _:
                     logger.debug(

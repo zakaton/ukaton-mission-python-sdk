@@ -23,7 +23,7 @@ matplotlib.use("TkAgg")
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, PressureDataEventType, SensorDataConfigurations, SensorDataType, EventDispatcher, SensorDataEventType, SensorDataEventTypeTuple, Vector2, Vector3, PressureValueList, PressureValue
 
-use_ble = True
+use_ble = False
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -37,12 +37,12 @@ else:
 data_rate = 20
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
-        # MotionDataType.QUATERNION: data_rate,
+        MotionDataType.QUATERNION: data_rate,
         # MotionDataType.ACCELERATION: data_rate,
         # MotionDataType.ROTATION_RATE: data_rate,
     },
     SensorType.PRESSURE: {
-        PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        # PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
         # PressureDataType.CENTER_OF_MASS: data_rate,
     }
 }
@@ -52,12 +52,13 @@ sensor_data_events: dict[SensorType, list[SensorDataEventType]] = {
         # MotionDataEventType.EULER,
         # MotionDataEventType.ACCELERATION,
         # MotionDataEventType.ROTATION_RATE,
+        MotionDataEventType.QUATERNION,
     ],
     SensorType.PRESSURE: [
-        PressureDataEventType.CENTER_OF_MASS,
-        PressureDataEventType.HEEL_TO_TOE,
-        PressureDataEventType.MASS,
-        PressureDataEventType.PRESSURE,
+        # PressureDataEventType.CENTER_OF_MASS,
+        # PressureDataEventType.HEEL_TO_TOE,
+        # PressureDataEventType.MASS,
+        # PressureDataEventType.PRESSURE,
     ]
 }
 
@@ -163,6 +164,8 @@ fig, axes = plt.subplots(num_rows, num_cols, constrained_layout=True)
 lines = []
 all_lines = []
 
+line_colors: list[str] = ["red", "green", "blue", "purple"]
+
 # Initialize the lines for each subplot
 for i, ax in enumerate(axes.flatten()):
     ax.get_xaxis().set_visible(False)
@@ -181,9 +184,9 @@ for i, ax in enumerate(axes.flatten()):
     show_legend = True
     match (sensor_type, sensor_data_event_type):
         case (SensorType.MOTION, MotionDataEventType.ACCELERATION | MotionDataEventType.LINEAR_ACCELERATION | MotionDataEventType.GRAVITY | MotionDataEventType.MAGNETOMETER | MotionDataEventType.GRAVITY):
-            line_x, = ax.plot([], [], label='x')
-            line_y, = ax.plot([], [], label='y')
-            line_z, = ax.plot([], [], label='z')
+            line_x, = ax.plot([], [], label='x', color=line_colors[0])
+            line_y, = ax.plot([], [], label='y', color=line_colors[1])
+            line_z, = ax.plot([], [], label='z', color=line_colors[2])
             lines_to_append += [line_x, line_y, line_z]
             match sensor_data_event_type:
                 case MotionDataEventType.MAGNETOMETER:
@@ -191,16 +194,16 @@ for i, ax in enumerate(axes.flatten()):
                 case _:
                     ax.set_ylim(-20, 20)
         case (SensorType.MOTION, MotionDataEventType.QUATERNION):
-            line_w, = ax.plot([], [], label='w')
-            line_x, = ax.plot([], [], label='x')
-            line_y, = ax.plot([], [], label='y')
-            line_z, = ax.plot([], [], label='z')
+            line_w, = ax.plot([], [], label='w', color=line_colors[3])
+            line_x, = ax.plot([], [], label='x', color=line_colors[0])
+            line_y, = ax.plot([], [], label='y', color=line_colors[1])
+            line_z, = ax.plot([], [], label='z', color=line_colors[2])
             lines_to_append += [line_w, line_x, line_y, line_z]
             ax.set_ylim(-1, 1)
         case (SensorType.MOTION, MotionDataEventType.EULER | MotionDataEventType.ROTATION_RATE):
-            line_pitch, = ax.plot([], [], label='pitch')
-            line_yaw, = ax.plot([], [], label='yaw')
-            line_roll, = ax.plot([], [], label='roll')
+            line_pitch, = ax.plot([], [], label='pitch', color=line_colors[0])
+            line_yaw, = ax.plot([], [], label='yaw', color=line_colors[1])
+            line_roll, = ax.plot([], [], label='roll', color=line_colors[2])
             lines_to_append += [line_pitch, line_yaw, line_roll]
             ax.set_ylim(-2 * np.pi, 2 * np.pi)
         case (SensorType.PRESSURE, PressureDataEventType.PRESSURE):
@@ -210,16 +213,17 @@ for i, ax in enumerate(axes.flatten()):
             ax.set_ylim(0, 1)
             show_legend = False
         case (SensorType.PRESSURE, PressureDataEventType.CENTER_OF_MASS):
-            line_x, = ax.plot([], [], label='x')
-            line_y, = ax.plot([], [], label='y')
+            line_x, = ax.plot([], [], label='x', color=line_colors[0])
+            line_y, = ax.plot([], [], label='y', color=line_colors[1])
             lines_to_append += [line_x, line_y]
             ax.set_ylim(0, 1)
         case (SensorType.PRESSURE, PressureDataEventType.HEEL_TO_TOE):
-            line_heel_to_toe, = ax.plot([], [], label='heel to toe')
+            line_heel_to_toe, = ax.plot(
+                [], [], label='heel to toe', color=line_colors[0])
             lines_to_append += [line_heel_to_toe]
             ax.set_ylim(0, 1)
         case (SensorType.PRESSURE, PressureDataEventType.MASS):
-            line_mass, = ax.plot([], [], label='mass')
+            line_mass, = ax.plot([], [], label='mass', color=line_colors[0])
             lines_to_append += [line_mass]
             ax.set_ylim(0, 1)
         case _:
