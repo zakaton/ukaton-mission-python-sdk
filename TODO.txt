@@ -1,5 +1,4 @@
 examples
-  reconnect via udp after disconnect
   pressure
     display insole
     position markers
