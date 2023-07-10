@@ -1,8 +1,4 @@
 examples
-  3D
-    figure out xyz
-    fix quaternion for motion module
-    fix quaternion for insoles
   reconnect via udp after disconnect
   pressure
     display insole

@@ -242,7 +242,7 @@ def parse_motion_euler(data: bytearray, byte_offset: int = 0, scalar: float = 1,
 insole_correction_quaternions: dict[DeviceType, np.quaternion] = {
     DeviceType.LEFT_INSOLE: Quaternion.from_euler_angles(0, math.pi / 2, -math.pi / 2),
     DeviceType.RIGHT_INSOLE: Quaternion.from_euler_angles(
-        -math.pi / 2, -math.pi / 2, 0)
+        0, -math.pi / 2, math.pi / 2)
 }
 correction_quaternions: dict[DeviceType, np.quaternion] = {
     DeviceType.MOTION_MODULE: Quaternion.from_euler_angles(0, -math.pi / 2, 0),

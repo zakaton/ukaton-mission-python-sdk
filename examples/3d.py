@@ -49,8 +49,14 @@ did_save_initial_quaternions = False
 initial_quaternions = []
 
 
-rotate_quaternion_90_deg = trimesh.transformations.quaternion_from_euler(
-    0, 0, -math.pi / 2)
+rotate_quaternion_90_deg: dict[DeviceType, list] = {
+    DeviceType.MOTION_MODULE: trimesh.transformations.quaternion_from_euler(
+        0, 0, 0),
+    DeviceType.RIGHT_INSOLE: trimesh.transformations.quaternion_from_euler(
+        0, 0, math.pi),
+    DeviceType.LEFT_INSOLE: trimesh.transformations.quaternion_from_euler(
+        0, 0, math.pi),
+}
 # pyrender is x-right, z-up, and y-back
 
 
@@ -75,7 +81,6 @@ def rotate_scene(quaternion):
     quaternion_array = Quaternion.as_float_array(quaternion)
     w, x, y, z = quaternion_array
     quaternion_array = [w, x, -z, y]
-    print(quaternion_array)
     viewer.render_lock.acquire()
     for i, node in enumerate(scene.mesh_nodes):
         if hasattr(node, 'rotation'):
@@ -85,7 +90,7 @@ def rotate_scene(quaternion):
             q = trimesh.transformations.quaternion_multiply(
                 initial_quaternion, quaternion_array)
             w, x, y, z = trimesh.transformations.quaternion_multiply(
-                q, rotate_quaternion_90_deg)
+                q, rotate_quaternion_90_deg[ukaton_mission.device_type])
             # node.rotation: [w, x, y, z]
             node.rotation = [x, y, z, w]
     viewer.render_lock.release()
@@ -115,7 +120,7 @@ main_thread.start()
 model_names: dict[DeviceType, str] = {
     DeviceType.MOTION_MODULE: "motionModule",
     DeviceType.LEFT_INSOLE: "leftShoe",
-    DeviceType.RIGHT_INSOLE: "rightShoe"
+    DeviceType.RIGHT_INSOLE: "leftShoe"
 }
 
 
@@ -126,10 +131,16 @@ def add_mesh():
     global did_add_mesh
     if did_add_mesh:
         return
+    print(ukaton_mission.device_type.name)
     model_trimesh = trimesh.load(
         f"/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/assets/{model_names[ukaton_mission.device_type]}.gltf")
     model_scene = pyrender.Scene.from_trimesh_scene(model_trimesh)
     for i, node in enumerate(model_scene.mesh_nodes):
+        if hasattr(node, 'scale'):
+            if ukaton_mission.device_type is DeviceType.RIGHT_INSOLE:
+                _scale = node.scale
+                _scale[0] *= -1
+                node.scale = _scale
         scene.add_node(node)
     did_add_mesh = True
 

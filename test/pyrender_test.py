@@ -36,8 +36,8 @@ async def rotate_object():
                 _q = trimesh.transformations.quaternion_multiply(
                     initial_quaternion, q)
                 w, x, y, z = _q
-                print(f"w: {w}, x: {x}, y: {y}, z: {z}")
-                node.rotation = [x, y, z, w]
+                # print(f"w: {w}, x: {x}, y: {y}, z: {z}")
+                # node.rotation = [x, y, z, w]
                 # print(node.rotation)
                 pass
         for j, node in enumerate(scene.mesh_nodes):
@@ -65,4 +65,8 @@ loaded_trimesh = trimesh.load(
     "/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/assets/leftShoe.gltf")
 scene = pyrender.Scene.from_trimesh_scene(loaded_trimesh)
 viewer = pyrender.Viewer(scene, use_raymond_lighting=True)
+for j, node in enumerate(scene.mesh_nodes):
+    if hasattr(node, 'scale'):
+        print(node.scale)
+        node.scale = [-4.32337856, 4.32337856, 4.32337856]
 viewer._init_and_start_app()
