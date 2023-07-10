@@ -99,11 +99,17 @@ def rotate_scene(quaternion):
 async def main():
     logger.debug("connecting to device...")
     await ukaton_mission.connect(device_identifier)
-    if ukaton_mission.is_connected:
-        logger.debug("connected!")
-        logger.debug("enabling sensor data...")
-        await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
-        logger.debug("enabled sensor data!")
+
+
+def on_connection():
+    logger.debug("connected!")
+    logger.debug("enabling sensor data...")
+    ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
+    logger.debug("enabled sensor data!")
+
+
+ukaton_mission.connection_event_dispatcher.add_event_listener(
+    ConnectionEventType.CONNECTED, on_connection)
 
 
 def run_main():

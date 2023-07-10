@@ -122,14 +122,15 @@ class UDPUkatonMission(BaseUkatonMission):
             self.socket.sendto(
                 message, (self.device_ip_address, self.__class__.REMOTE_PORT))
         except socket.error as e:
+            # FILL - reconnect
             # logger.debug(f"socket error: {e}")
             pass
 
-    async def _send_sensor_data_configurations(self, serialized_sensor_data_configuration: bytearray):
+    def _send_sensor_data_configurations(self, serialized_sensor_data_configuration: bytearray):
         self.send_message(bytearray([UDPMessageType.SET_SENSOR_DATA_CONFIGURATIONS, len(
             serialized_sensor_data_configuration), *serialized_sensor_data_configuration]))
 
-    async def _send_vibration(self, message: bytearray):
+    def _send_vibration(self, message: bytearray):
         self.send_message(
             bytearray([UDPMessageType.VIBRATION, len(message), *message]))
 

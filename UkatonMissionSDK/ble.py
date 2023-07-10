@@ -62,13 +62,15 @@ class BLEUkatonMission(BaseUkatonMission):
         if self.is_connected:
             await self.client.disconnect()
 
-    async def _send_sensor_data_configurations(self, serialized_sensor_data_configuration: bytearray):
+    def _send_sensor_data_configurations(self, serialized_sensor_data_configuration: bytearray):
         if self.is_connected:
-            await self.client.write_gatt_char(self.__class__.SENSOR_DATA_CONFIGURATION_CHARACTERISTIC_UUID, serialized_sensor_data_configuration, True)
+            self.client.write_gatt_char(
+                self.__class__.SENSOR_DATA_CONFIGURATION_CHARACTERISTIC_UUID, serialized_sensor_data_configuration, True)
 
-    async def _send_vibration(self, vibration: bytearray):
+    def _send_vibration(self, vibration: bytearray):
         if self.is_connected:
-            await self.client.write_gatt_char(self.__class__.VIBRATION_CHARACTERISTIC_UUID, vibration, True)
+            self.client.write_gatt_char(
+                self.__class__.VIBRATION_CHARACTERISTIC_UUID, vibration, True)
 
 
 class BLEUkatonMissions(BaseUkatonMissions):
