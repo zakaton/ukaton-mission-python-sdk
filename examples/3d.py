@@ -132,7 +132,6 @@ def add_mesh():
     global did_add_mesh
     if did_add_mesh:
         return
-    print(ukaton_mission.device_type.name)
     model_trimesh = trimesh.load(
         f"/Users/zakaton/Documents/GitHub/ukaton-mission-python-sdk/assets/{model_names[ukaton_mission.device_type]}.gltf")
     model_scene = pyrender.Scene.from_trimesh_scene(model_trimesh)
