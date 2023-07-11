@@ -19,9 +19,16 @@ class Vector2:
     x: float = 0
     y: float = 0
 
+    def multiply_scalar(self, scalar: float):
+        self.x *= scalar
+        self.y *= scalar
+
     def __iter__(self):
         yield self.x
         yield self.y
+
+    def __round__(self, ndigits=0):
+        return self.__class__(round(self.x), round(self.y))
 
     def __getitem__(self, key):
         match key:
