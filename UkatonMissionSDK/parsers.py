@@ -23,6 +23,39 @@ class Vector2:
         self.x *= scalar
         self.y *= scalar
 
+    def __mul__(self, other):
+        if isinstance(other, self.__class__):
+            x = self.x * other.x
+            y = self.y * other.y
+            return self.__class__(x, y)
+        elif isinstance(other, float):
+            x = self.x * other
+            y = self.y * other
+            return self.__class__(x, y)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            x = self.x - other.x
+            y = self.y - other.y
+            return self.__class__(x, y)
+        elif isinstance(other, float):
+            x = self.x - other
+            y = self.y - other
+            return self.__class__(x, y)
+
+    def __rsub__(self, other):
+        if isinstance(other, self.__class__):
+            x = other.x - self.x
+            y = other.y - self.y
+            return self.__class__(x, y)
+        elif isinstance(other, float):
+            x = other - self.x
+            y = other - self.y
+            return self.__class__(x, y)
+
     def __iter__(self):
         yield self.x
         yield self.y

@@ -28,14 +28,20 @@ import threading
 
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.PRESSURE: {
-        PressureDataType.PRESSURE_SINGLE_BYTE: 500
+        PressureDataType.PRESSURE_SINGLE_BYTE: 20
     }
 }
 
 
 def on_pressure_data(pressure_values: PressureValueList, timestamp: int):
-    print(f"[{timestamp}]: {pressure_values[0]}")
-    pass
+    if not did_setup_window:
+        return
+
+    for i, pressure_value in enumerate(pressure_values):
+        opacity = pressure_value.normalized_value
+        red = int(opacity * 255)
+        fill_color = f"#{red:02x}0000"
+        canvas.itemconfig(squares[i], fill=fill_color)
 
 
 ukaton_mission.pressure_data_event_dispatcher.add_event_listener(
@@ -68,10 +74,19 @@ main_thread.start()
 
 # without this the image will be removed due to garbage collection
 background_photo = None
+squares = []
+canvas = None
+did_setup_window = False
 
 
 def setup_window():
+    global did_setup_window
+    if did_setup_window:
+        return
+    did_setup_window = True
+
     global background_photo
+    global canvas
     image_dimensions = Vector2(265, 753)
     image_scalar = 0.8
     image_dimensions.multiply_scalar(image_scalar)
@@ -89,35 +104,24 @@ def setup_window():
 
     canvas.create_image(0, 0, anchor=tk.NW, image=background_photo)
 
-    squares = []
+    square_dimensions_percent = Vector2(0.17, 0.06)
+    square_dimensions = image_dimensions * square_dimensions_percent
+    half_square_dimensions = square_dimensions * 0.5
 
-    for position in square_positions:
+    for i in range(ukaton_mission.number_of_pressure_sensors):
+        pressure_position = ukaton_mission.get_pressure_position(i)
+        square_position = image_dimensions * pressure_position
+        square_position = square_position - half_square_dimensions
         square = canvas.create_rectangle(
-            position[0], position[1], position[0] + 30, position[1] + 30, fill='red')
+            square_position.x, square_position.y, square_position.x + square_dimensions.x, square_position.y + square_dimensions.y, fill='black')
         squares.append(square)
 
-    def update_square_colors(opacities):
-        for i, opacity in enumerate(opacities):
-            red = int(opacity * 255)
-            fill_color = f"#{red:02x}0000"
-            canvas.itemconfig(squares[i], fill=fill_color)
-
-    opacities = [0.5, 0.8, 1.0, 0.2,
-                 0.4, 0.6, 0.9, 0.3,
-                 0.7, 0.1, 0.5, 0.8,
-                 1.0, 0.2, 0.4, 0.6]
-    update_square_colors(opacities)
+    did_setup_window = True
 
 
 ukaton_mission.connection_event_dispatcher.add_event_listener(
     ConnectionEventType.CONNECTED, setup_window, True)
 
-square_positions = [
-    (50, 50), (100, 50), (150, 50), (200, 50),
-    (50, 100), (100, 100), (150, 100), (200, 100),
-    (50, 150), (100, 150), (150, 150), (200, 150),
-    (50, 200), (100, 200), (150, 200), (200, 200)
-]
-
 window = tk.Tk()
+# setup_window()
 window.mainloop()

@@ -188,6 +188,9 @@ class BaseUkatonMission(abc.ABC):
 
         return byte_offset
 
+    def get_pressure_position(self, index: int):
+        return get_pressure_position(index, self.device_type)
+
     def _parse_pressure_data(self, data: bytearray, byte_offset: int, final_byte_offset: int, timestamp: int):
         while byte_offset < final_byte_offset:
             pressure_sensor_data_type = PressureDataType(data[byte_offset])
@@ -209,7 +212,7 @@ class BaseUkatonMission(abc.ABC):
                         else:
                             value = get_uint_16(data, byte_offset)
                             byte_offset += 2
-                        (x, y) = get_pressure_position(i, self.device_type)
+                        (x, y) = self.get_pressure_position(i)
                         pressure_values[i] = PressureValue(x, y, value)
 
                     pressure_values.update()

@@ -1,13 +1,3 @@
-examples
-  pressure
-    display insole
-    position markers
-    set opacity
-  basic UI
-    connect via BLE or UDP
-    set sensor data
-    view data
-    vibrate
 blender
   integrate
   fix orientations
