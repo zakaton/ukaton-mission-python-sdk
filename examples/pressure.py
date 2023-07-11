@@ -8,7 +8,7 @@ from PIL import Image, ImageTk
 import logging
 logging.basicConfig()
 logger = logging.getLogger("pressure")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, PressureDataType, BLEUkatonMissions, PressureDataEventType, SensorDataConfigurations, DeviceType, PressureValueList, Vector2
 

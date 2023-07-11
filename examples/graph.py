@@ -37,12 +37,12 @@ else:
 data_rate = 20
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
-        MotionDataType.QUATERNION: data_rate,
-        # MotionDataType.ACCELERATION: data_rate,
-        # MotionDataType.ROTATION_RATE: data_rate,
+        # MotionDataType.QUATERNION: data_rate,
+        MotionDataType.LINEAR_ACCELERATION: data_rate,
+        MotionDataType.ROTATION_RATE: data_rate,
     },
     SensorType.PRESSURE: {
-        # PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
+        PressureDataType.PRESSURE_SINGLE_BYTE: data_rate,
         # PressureDataType.CENTER_OF_MASS: data_rate,
     }
 }
@@ -50,15 +50,15 @@ sensor_data_events: dict[SensorType, list[SensorDataEventType]] = {
     # SensorType.MOTION: list(sensor_data_configurations[SensorType.MOTION].keys()),
     SensorType.MOTION: [
         # MotionDataEventType.EULER,
-        # MotionDataEventType.ACCELERATION,
-        # MotionDataEventType.ROTATION_RATE,
-        MotionDataEventType.QUATERNION,
+        MotionDataEventType.LINEAR_ACCELERATION,
+        MotionDataEventType.ROTATION_RATE,
+        # MotionDataEventType.QUATERNION,
     ],
     SensorType.PRESSURE: [
         # PressureDataEventType.CENTER_OF_MASS,
         # PressureDataEventType.HEEL_TO_TOE,
         # PressureDataEventType.MASS,
-        # PressureDataEventType.PRESSURE,
+        PressureDataEventType.PRESSURE,
     ]
 }
 
@@ -155,8 +155,8 @@ def add_data(sensor_type: SensorType, sensor_data_event_type: SensorDataEventTyp
 
 
 # Number of rows and columns in the grid
-num_rows = 2
-num_cols = 2
+num_rows = 3
+num_cols = 1
 
 
 fig, axes = plt.subplots(num_rows, num_cols, constrained_layout=True)
