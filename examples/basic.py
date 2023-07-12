@@ -10,7 +10,7 @@ logger.setLevel(logging.DEBUG)
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations
 
-use_ble = True
+use_ble = False
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -32,10 +32,16 @@ def on_disconnection():
     logger.debug("disconnected callback triggered :O")
 
 
+def on_quaternion_data(quaternion, timestamp):
+    logger.debug(f"[{timestamp}]: {quaternion}")
+
+
 ukaton_mission.connection_event_dispatcher.add_event_listener(
     ConnectionEventType.CONNECTED, on_connection)
 ukaton_mission.connection_event_dispatcher.add_event_listener(
     ConnectionEventType.DISCONNECTED, on_disconnection)
+ukaton_mission.motion_data_event_dispatcher.add_event_listener(
+    MotionDataEventType.QUATERNION, on_quaternion_data)
 
 sensor_data_configurations: SensorDataConfigurations = {
     SensorType.MOTION: {
