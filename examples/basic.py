@@ -10,7 +10,7 @@ logger.setLevel(logging.DEBUG)
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations
 
-use_ble = False
+use_ble = True
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address
@@ -22,6 +22,7 @@ else:
     ukaton_mission = UDPUkatonMission()
 
 import asyncio
+import threading
 
 
 def on_connection():
@@ -54,17 +55,22 @@ sensor_data_configurations: SensorDataConfigurations = {
 
 
 async def main():
+    logger.debug("attempting to connect...")
     await ukaton_mission.connect(device_identifier)
+    logger.debug(f"connected? {ukaton_mission.is_connected}")
     if ukaton_mission.is_connected:
         logger.debug("enabling sensor data...")
         await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
         logger.debug("enabled sensor data!")
 
 
-def run_main_in_background():
-    loop = asyncio.get_event_loop()
+def run_main():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     loop.create_task(main())
     loop.run_forever()
 
 
-run_main_in_background()
+main_thread = threading.Thread(target=run_main)
+# main_thread.daemon = True
+main_thread.start()
