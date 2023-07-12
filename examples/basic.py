@@ -49,10 +49,10 @@ sensor_data_configurations: SensorDataConfigurations = {
 
 async def main():
     await ukaton_mission.connect(device_identifier)
-
-    logger.debug("enabling sensor data...")
-    await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
-    logger.debug("enabled sensor data!")
+    if ukaton_mission.is_connected:
+        logger.debug("enabling sensor data...")
+        await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
+        logger.debug("enabled sensor data!")
 
 
 def run_main_in_background():

@@ -1,4 +1,5 @@
-from enum import StrEnum, IntEnum, auto
+from enum import IntEnum, auto
+from strenum import StrEnum
 from typing import Union, Tuple
 
 

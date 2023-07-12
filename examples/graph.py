@@ -2,7 +2,6 @@ import sys
 sys.path.append(".")
 
 from typing import Union
-from dataclasses import dataclass
 from collections import deque
 
 import logging
