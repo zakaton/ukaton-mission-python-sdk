@@ -8,6 +8,11 @@ class ConnectionEventType(IntEnum):
     DISCONNECTED = auto()
 
 
+class ConnectionType(IntEnum):
+    BLE = 0
+    UDP = auto()
+
+
 class PressureDataEventType(IntEnum):
     PRESSURE = 0
     CENTER_OF_MASS = auto()

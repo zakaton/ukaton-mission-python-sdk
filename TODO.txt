@@ -1,4 +1,6 @@
 blender
-  integrate
-  fix orientations
-  UI
+  setup UI
+  connect
+  display data
+  control active object
+  control viewport
