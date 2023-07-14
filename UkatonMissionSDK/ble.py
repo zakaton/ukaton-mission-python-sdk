@@ -26,6 +26,8 @@ class BLEUkatonMission(BaseUkatonMission):
         self.client: Optional[BleakClient] = None
 
     async def connect(self, device_name: str):
+        self.is_connecting = True
+
         self.device_name: str = device_name
         logger.debug(f'looking for "{self.device_name}"...')
         self.device = await BleakScanner.find_device_by_filter(lambda d, ad: d.name == self.device_name)

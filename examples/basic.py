@@ -10,7 +10,7 @@ logger.setLevel(logging.DEBUG)
 
 from UkatonMissionSDK import BLEUkatonMission, UDPUkatonMission, ConnectionEventType, SensorType, MotionDataType, PressureDataType, BLEUkatonMissions, MotionDataEventType, SensorDataConfigurations
 
-use_ble = True
+use_ble = False
 device_name = "missionDevice"
 device_ip_address = "192.168.1.30"
 device_identifier = device_name if use_ble else device_ip_address

@@ -37,6 +37,8 @@ class UDPUkatonMission(BaseUkatonMission):
         self.check_connection_thread_event: Optional[threading.Event] = None
 
     async def connect(self, device_ip_address: str):
+        self.is_connecting = True
+
         self.device_ip_address = device_ip_address
 
         logger.debug("creating socket...")

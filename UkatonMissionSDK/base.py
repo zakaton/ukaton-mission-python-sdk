@@ -19,6 +19,7 @@ class BaseUkatonMission(abc.ABC):
     def __init__(self):
         super().__init__()
         self.is_connected: bool = False
+        self.is_connecting: bool = False
         self.connection_event_dispatcher: EventDispatcher = EventDispatcher(
             ConnectionEventType)
         self.motion_data_event_dispatcher: EventDispatcher = EventDispatcher(
@@ -63,11 +64,13 @@ class BaseUkatonMission(abc.ABC):
 
     def _connection_handler(self):
         self.is_connected = True
+        self.is_connecting = False
         self.connection_event_dispatcher.dispatch(
             ConnectionEventType.CONNECTED)
 
     def _disconnection_handler(self, *args):
         self.is_connected = False
+        self.is_connecting = False
         self.connection_event_dispatcher.dispatch(
             ConnectionEventType.DISCONNECTED)
 

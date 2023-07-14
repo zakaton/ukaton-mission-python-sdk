@@ -1,6 +1,5 @@
 blender
-  setup UI
-  connect
+  connect/disconnect properly (close thread)
   display data
   control active object
   control viewport
