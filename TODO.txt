@@ -1,5 +1,5 @@
 blender
-  toggle sensor data
+  fix toggle sensor data for ble
   display data
   control active object
   control viewport
