@@ -60,7 +60,8 @@ class UkatonMissionPanel(Panel):
         layout = self.layout
         scene = context.scene
 
-        d = bpy.types.Scene.ukaton_mission_panel_dict
+        d = scene.ukaton_mission_panel_dict
+        p = scene.ukaton_mission_panel_properties
 
         layout.use_property_split = True
         layout.use_property_decorate = False
@@ -68,65 +69,72 @@ class UkatonMissionPanel(Panel):
         layout.prop(scene.ukaton_mission_panel_properties,
                     "connection_type", text="type", expand=True)
 
-        if scene.ukaton_mission_panel_properties.connection_type == 'BLE':
-            layout.prop(scene.ukaton_mission_panel_properties,
-                        "device_name", text="name")
+        if p.connection_type == 'BLE':
+            layout.prop(p, "device_name", text="name")
 
-        if scene.ukaton_mission_panel_properties.connection_type == 'UDP':
-            layout.prop(scene.ukaton_mission_panel_properties,
-                        "ip_address", text="ip")
+        if p.connection_type == 'UDP':
+            layout.prop(p, "ip_address", text="ip")
 
-        toggle_connection_text = "connect"
-        if d.ukaton_mission is not None:
-            if d.ukaton_mission.is_connecting:
-                toggle_connection_text = "connecting..."
-            elif d.ukaton_mission.is_connected:
-                toggle_connection_text = "disconnect"
         layout.operator("object.toggle_connection_operator",
-                        text=toggle_connection_text)
+                        text=d.toggle_connection_text)
 
-        layout.label(text="quaternion:")
-        row = layout.row()
-        row.prop(scene.ukaton_mission_panel_properties, "quaternion", text="")
-        row.enabled = False
+        if d.ukaton_mission is not None and d.ukaton_mission.is_connected:
+            layout.operator("object.toggle_quaternion_data_operator",
+                            text=d.toggle_quaternion_data_text)
+            layout.label(text="quaternion:")
+            row = layout.row()
+            row.prop(p, "quaternion", text="")
+            row.enabled = False
 
 
-def run_connect_to_device(context):
-    print("run_connect_to_device")
+def run_toggle_connection(context):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.create_task(connect_to_device(context))
+    loop.create_task(toggle_connection(context))
     loop.run_forever()
 
 
-async def connect_to_device(context):
+async def toggle_connection(context):
     scene = context.scene
-    d = bpy.types.Scene.ukaton_mission_panel_dict
-    print(f"d.disconnect_flag.is_set(): {d.disconnect_flag.is_set()}")
+    d = scene.ukaton_mission_panel_dict
     while not d.disconnect_flag.is_set():
-        properties = scene.ukaton_mission_panel_properties
-        print(f"properties: {properties}")
-        connection_type = getattr(
-            ConnectionType, properties.connection_type)
-        print(f"connection_type: {connection_type}")
-        ukaton_mission = None
-        device_identifier = None
-        match connection_type:
-            case ConnectionType.BLE:
-                ukaton_mission = BLEUkatonMission()
-                device_identifier = properties.device_name
-            case ConnectionType.UDP:
-                ukaton_mission = UDPUkatonMission()
-                device_identifier = properties.ip_address
-        if ukaton_mission is not None:
-            d.ukaton_mission = ukaton_mission
-            logger.info(
-                "attempting to connect to ukaton mission device...")
-            await ukaton_mission.connect(device_identifier)
+        ukaton_mission = d.ukaton_mission
+        if ukaton_mission is None:
+            properties = scene.ukaton_mission_panel_properties
+            connection_type = getattr(
+                ConnectionType, properties.connection_type)
+            ukaton_mission = None
+            device_identifier = None
+            match connection_type:
+                case ConnectionType.BLE:
+                    ukaton_mission = BLEUkatonMission()
+                    device_identifier = properties.device_name
+                case ConnectionType.UDP:
+                    ukaton_mission = UDPUkatonMission()
+                    device_identifier = properties.ip_address
+            if ukaton_mission is not None:
+                d.ukaton_mission = ukaton_mission
+                ukaton_mission.motion_data_event_dispatcher.add_event_listener(
+                    MotionDataEventType.QUATERNION, on_quaternion_data)
+                logger.info(
+                    "attempting to connect to ukaton mission device...")
+                d.toggle_connection_text = "connecting..."
+                await ukaton_mission.connect(device_identifier)
+                if ukaton_mission.is_connected:
+                    logger.info(f"connected to device!")
+                    d.toggle_connection_text = "disconnect"
 
-        logger.info("disconnecting from device...")
-        if ukaton_mission.is_connected:
-            await ukaton_mission.disconnect()
+    logger.info("disconnecting from device...")
+    if ukaton_mission.is_connected:
+        await ukaton_mission.disconnect()
+        if not ukaton_mission.is_connected:
+            logger.info("disconnected from device!")
+            d.toggle_connection_text = "connect"
+    logger.info("exiting toggle_connection")
+
+
+def on_quaternion_data(quaternion, timestamp):
+    logger.debug(f"[{timestamp}]: {quaternion}")
 
 
 class ToggleConnectionOperator(bpy.types.Operator):
@@ -135,21 +143,70 @@ class ToggleConnectionOperator(bpy.types.Operator):
     bl_label = "toggle connection"
 
     def execute(self, context):
-        d = bpy.types.Scene.ukaton_mission_panel_dict
+        scene = context.scene
+        d = scene.ukaton_mission_panel_dict
         ukaton_mission = d.ukaton_mission
-        print(ukaton_mission is not None)
 
         if ukaton_mission is not None:
             d.disconnect_flag.set()
-            if d.connect_to_device_thread:
-                d.connect_to_device_thread.join()
-                d.connect_to_device_thread = None
+            if d.toggle_connection_thread:
+                d.toggle_connection_thread = None
             d.ukaton_mission = None
         else:
             d.disconnect_flag.clear()
-            d.connect_to_device_thread = threading.Thread(
-                target=run_connect_to_device, args=(context,))
-            d.connect_to_device_thread.start()
+            d.toggle_connection_thread = threading.Thread(
+                target=run_toggle_connection, args=(context,))
+            d.toggle_connection_thread.daemon = True
+            d.toggle_connection_thread.start()
+
+        return {'FINISHED'}
+
+
+def run_toggle_quaternion_data(context):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(toggle_quaternion_data(context))
+    loop.run_forever()
+
+
+async def toggle_quaternion_data(context):
+    scene = context.scene
+    d = scene.ukaton_mission_panel_dict
+    quaternion_data_enabled = not d.quaternion_data_enabled
+
+    logger.info(f"quaternion_data_enabled: {quaternion_data_enabled}")
+    data_rate = 0
+    if quaternion_data_enabled:
+        data_rate = 20
+        d.toggle_quaternion_data_text = "enabling..."
+    else:
+        d.toggle_quaternion_data_text = "disabling..."
+
+    sensor_data_configurations = {
+        SensorType.MOTION: {
+            MotionDataType.QUATERNION: data_rate,
+        }
+    }
+    await d.ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
+    d.quaternion_data_enabled = quaternion_data_enabled
+    d.toggle_quaternion_data_text = "disable" if d.quaternion_data_enabled else "enable"
+
+
+class ToggleQuaternionDataOperator(bpy.types.Operator):
+    """toggle quaternion data for a Ukaton Mission device"""
+    bl_idname = "object.toggle_quaternion_data_operator"
+    bl_label = "toggle quaternion data"
+
+    def execute(self, context):
+        scene = context.scene
+        d = scene.ukaton_mission_panel_dict
+        ukaton_mission = d.ukaton_mission
+
+        if ukaton_mission is not None and ukaton_mission.is_connected:
+            d.toggle_quaternion_data_thread = threading.Thread(
+                target=run_toggle_quaternion_data, args=(context,))
+            d.toggle_quaternion_data_thread.daemon = True
+            d.toggle_quaternion_data_thread.start()
 
         return {'FINISHED'}
 
@@ -160,7 +217,7 @@ class UkatonMissionPanelProperties(PropertyGroup):
         default=ConnectionType.BLE.name
     )
     device_name: bpy.props.StringProperty(default="missionDevice")
-    ip_address: bpy.props.StringProperty(default="0.0.0.0")
+    ip_address: bpy.props.StringProperty(default="192.168.1.30")
     quaternion: FloatVectorProperty(
         size=4,
         default=(0.0, 0.0, 0.0, 0.0),
@@ -168,7 +225,7 @@ class UkatonMissionPanelProperties(PropertyGroup):
     )
 
 
-classes = [UkatonMissionPanel, ToggleConnectionOperator,
+classes = [UkatonMissionPanel, ToggleConnectionOperator, ToggleQuaternionDataOperator,
            UkatonMissionPanelProperties]
 
 
@@ -180,9 +237,13 @@ def register():
         type=UkatonMissionPanelProperties)
 
     bpy.types.Scene.ukaton_mission_panel_dict = dotdict({
-        "connect_to_device_thread": None,
+        "toggle_connection_thread": None,
         "disconnect_flag": threading.Event(),
-        "ukaton_mission": None
+        "ukaton_mission": None,
+        "toggle_connection_text": "connect",
+        "quaternion_data_enabled": False,
+        "toggle_quaternion_data_text": "enable",
+        "toggle_quaternion_data_thread": None
     })
 
 

@@ -1,5 +1,5 @@
 blender
-  connect/disconnect properly (close thread)
+  toggle sensor data
   display data
   control active object
   control viewport

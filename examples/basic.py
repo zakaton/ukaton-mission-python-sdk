@@ -62,6 +62,9 @@ async def main():
         logger.debug("enabling sensor data...")
         await ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
         logger.debug("enabled sensor data!")
+        await asyncio.sleep(2)
+        await ukaton_mission.disconnect()
+        logger.debug(f"connected? {ukaton_mission.is_connected}")
 
 
 def run_main():

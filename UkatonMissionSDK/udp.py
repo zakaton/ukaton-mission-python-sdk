@@ -43,7 +43,8 @@ class UDPUkatonMission(BaseUkatonMission):
 
         logger.debug("creating socket...")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind((self.__class__.LOCAL_IP, self.__class__.LOCAL_PORT))
+        self.socket.bind(
+            (self.__class__.LOCAL_IP, self.__class__.LOCAL_PORT))
         logger.debug("created socket")
 
         logger.debug("setting up receive thread...")
@@ -80,13 +81,18 @@ class UDPUkatonMission(BaseUkatonMission):
         return await self._receive_device_type_future
 
     async def disconnect(self):
+        logger.debug("attempting to disconnect from device...")
         self.check_udp_messages_thread_event.set()
         self.ping_thread_event.set()
         self.check_connection_thread_event.set()
         self._did_receive_device_type = False
+        _socket = self.socket
+        self.socket = None
+        _socket.close()
+        self._disconnection_handler()
 
     def check_udp_messages(self):
-        while not self.check_udp_messages_thread_event.is_set():
+        while self.socket is not None and not self.check_udp_messages_thread_event.is_set():
             data, addr = self.socket.recvfrom(1024)
             logger.debug(
                 f'Received message from {addr[0]}:{addr[1]}: {data}')

@@ -71,6 +71,7 @@ class BaseUkatonMission(abc.ABC):
     def _disconnection_handler(self, *args):
         self.is_connected = False
         self.is_connecting = False
+        logger.debug("disconnected from device")
         self.connection_event_dispatcher.dispatch(
             ConnectionEventType.DISCONNECTED)
 
