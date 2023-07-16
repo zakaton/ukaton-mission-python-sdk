@@ -107,6 +107,9 @@ async def connection_loop(context):
                 d.toggle_sensor_data_text = "disable sensor data" if d.is_sensor_data_enabled else "enable sensor data"
                 logger.info(f"did {s} sensor data")
                 d.should_set_sensor_data_configurations = False
+            elif d.is_sensor_data_enabled:
+                # without this it doesn't work with BLEUkatonMission
+                await asyncio.sleep(0.1)
 
     ukaton_mission = d.ukaton_mission
     if ukaton_mission.is_connected:
