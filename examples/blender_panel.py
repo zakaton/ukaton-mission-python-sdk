@@ -159,7 +159,6 @@ def run_connection_loop(context):
     asyncio.set_event_loop(loop)
     loop.create_task(connection_loop(context))
     loop.run_forever()
-    # asyncio.run(connection_loop(context))
 
 
 class ToggleConnectionOperator(bpy.types.Operator):

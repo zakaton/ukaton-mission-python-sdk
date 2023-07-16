@@ -7,7 +7,7 @@ from UkatonMissionSDK.enumerations import *
 import logging
 logging.basicConfig()
 logger = logging.getLogger("BLEUkatonMission")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 
 class BLEUkatonMission(BaseUkatonMission):
