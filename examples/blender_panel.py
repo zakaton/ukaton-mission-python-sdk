@@ -99,6 +99,14 @@ async def connection_loop(context):
         ukaton_mission = d.ukaton_mission
         if ukaton_mission is None:
             await connect_to_device(context)
+        else:
+            if d.should_set_sensor_data_configurations:
+                s = "enable" if d.is_sensor_data_enabled else "disable"
+                logger.info(f"about to {s} sensor data...")
+                await d.ukaton_mission.set_sensor_data_configurations(d.sensor_data_configurations)
+                d.toggle_sensor_data_text = "disable sensor data" if d.is_sensor_data_enabled else "enable sensor data"
+                logger.info(f"did {s} sensor data")
+                d.should_set_sensor_data_configurations = False
 
     ukaton_mission = d.ukaton_mission
     if ukaton_mission.is_connected:
@@ -143,15 +151,15 @@ async def disconnect_from_device(context):
     if not ukaton_mission.is_connected:
         logger.info("disconnected from device!")
         d.toggle_connection_text = "connect"
-        del d.ukaton_mission
+    del d.ukaton_mission
 
 
 def run_connection_loop(context):
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # loop.create_task(connection_loop(context))
-    # loop.run_forever()
-    asyncio.run(connection_loop(context))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(connection_loop(context))
+    loop.run_forever()
+    # asyncio.run(connection_loop(context))
 
 
 class ToggleConnectionOperator(bpy.types.Operator):
@@ -172,38 +180,10 @@ class ToggleConnectionOperator(bpy.types.Operator):
             d.disconnect_flag.clear()
             d.connection_loop_thread = threading.Thread(
                 target=run_connection_loop, args=(context,))
-            d.connection_loop_thread.daemon = True
+            # d.connection_loop_thread.daemon = True
             d.connection_loop_thread.start()
 
         return {'FINISHED'}
-
-
-async def toggle_sensor_data(context):
-    scene = context.scene
-    d = scene.ukaton_mission_panel_dict
-    sensor_data_enabled = not d.sensor_data_enabled
-
-    logger.info(f"sensor_data_enabled: {sensor_data_enabled}")
-    data_rate = 0
-    if sensor_data_enabled:
-        data_rate = 20
-        d.toggle_sensor_data_text = "enabling..."
-    else:
-        d.toggle_sensor_data_text = "disabling..."
-
-    sensor_data_configurations = {
-        SensorType.MOTION: {
-            MotionDataType.QUATERNION: data_rate,
-        }
-    }
-    await d.ukaton_mission.set_sensor_data_configurations(sensor_data_configurations)
-    d.sensor_data_enabled = sensor_data_enabled
-    d.toggle_sensor_data_text = "disable sensor data" if d.sensor_data_enabled else "enable sensor data"
-
-
-def run_toggle_sensor_data(context):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(toggle_sensor_data(context))
 
 
 class ToggleSensorDataOperator(bpy.types.Operator):
@@ -217,7 +197,15 @@ class ToggleSensorDataOperator(bpy.types.Operator):
         ukaton_mission = d.ukaton_mission
 
         if ukaton_mission is not None and ukaton_mission.is_connected:
-            run_toggle_sensor_data(context)
+            d.is_sensor_data_enabled = not d.is_sensor_data_enabled
+            data_rate = 0
+            if d.is_sensor_data_enabled:
+                d.toggle_sensor_data_text = "enabling sensor data..."
+                data_rate = 20
+            else:
+                d.toggle_sensor_data_text = "disabling sensor data..."
+            d.sensor_data_configurations[SensorType.MOTION][MotionDataType.QUATERNION] = data_rate
+            d.should_set_sensor_data_configurations = True
 
         return {'FINISHED'}
 

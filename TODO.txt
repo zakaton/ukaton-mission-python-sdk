@@ -1,5 +1,4 @@
 blender
-  fix toggle sensor data for ble
-  display data
-  control active object
-  control viewport
+  fix ble sensor data issue
+  rotate active object
+  orbit viewport camera

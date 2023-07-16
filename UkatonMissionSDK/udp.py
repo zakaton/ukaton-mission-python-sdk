@@ -19,12 +19,12 @@ logger.setLevel(logging.ERROR)
 
 class UDPUkatonMission(BaseUkatonMission):
     LOCAL_IP: str = "0.0.0.0"
-    LOCAL_PORT: int = 5005
 
     REMOTE_PORT: int = 9999
 
     def __init__(self):
         super().__init__()
+        self.LOCAL_PORT: int = 5005
         self.device_ip_address: Optional[str] = None
         self._did_receive_device_type: bool = False
         self._receive_device_type_future: Optional[asyncio.Future] = None
@@ -44,7 +44,7 @@ class UDPUkatonMission(BaseUkatonMission):
         logger.debug("creating socket...")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(
-            (self.__class__.LOCAL_IP, self.__class__.LOCAL_PORT))
+            (self.__class__.LOCAL_IP, self.LOCAL_PORT))
         logger.debug("created socket")
 
         logger.debug("setting up receive thread...")
