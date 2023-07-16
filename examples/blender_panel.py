@@ -22,6 +22,7 @@ import bpy
 from bpy.types import Panel, PropertyGroup
 from bpy.props import EnumProperty, StringProperty, FloatVectorProperty
 import mathutils
+import math
 import quaternion as Quaternion
 
 import logging
@@ -96,15 +97,27 @@ def on_quaternion_data(quaternion, timestamp):
 
 
 def on_quaternion(quaternion):
-    quaternion_array = Quaternion.as_float_array(quaternion)
-    w, x, y, z = quaternion_array
-    rotation_quaternion = mathutils.Quaternion((w, x, y, z))
-    logger.debug(f"rotation_quaternion: {rotation_quaternion}")
+    quaternion = convert_quaternion_from_webgl_to_blender(quaternion)
+    logger.debug(f"quaternion: {quaternion}")
     active_object = bpy.context.view_layer.objects.active
     logger.debug(f"active_object: {active_object}")
     if active_object is not None:
         active_object.rotation_mode = 'QUATERNION'
-        active_object.rotation_quaternion = rotation_quaternion
+        active_object.rotation_quaternion = quaternion
+
+
+# I used chatGPT to fix the quaternion
+webgl_to_blender_matrix = mathutils.Matrix.Rotation(math.radians(90.0), 4, 'X')
+
+
+def convert_quaternion_from_webgl_to_blender(quaternion):
+    quaternion_array = Quaternion.as_float_array(quaternion)
+    w, x, y, z = quaternion_array
+    quaternion = mathutils.Quaternion((w, x, y, z))
+    matrix = quaternion.to_matrix().to_4x4()
+    matrix = webgl_to_blender_matrix @ matrix
+    quaternion = matrix.to_quaternion()
+    return quaternion
 
 
 async def connection_loop(context):
