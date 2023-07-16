@@ -21,6 +21,8 @@ bl_info = {
 import bpy
 from bpy.types import Panel, PropertyGroup
 from bpy.props import EnumProperty, StringProperty, FloatVectorProperty
+import mathutils
+import quaternion as Quaternion
 
 import logging
 logging.basicConfig()
@@ -88,8 +90,21 @@ class UkatonMissionPanel(Panel):
                             text=d.toggle_sensor_data_text)
 
 
-def on_sensor_data(sensor, timestamp):
-    logger.debug(f"[{timestamp}]: {sensor}")
+def on_quaternion_data(quaternion, timestamp):
+    logger.debug(f"[{timestamp}]: {quaternion}")
+    on_quaternion(quaternion)
+
+
+def on_quaternion(quaternion):
+    quaternion_array = Quaternion.as_float_array(quaternion)
+    w, x, y, z = quaternion_array
+    rotation_quaternion = mathutils.Quaternion((w, x, y, z))
+    logger.debug(f"rotation_quaternion: {rotation_quaternion}")
+    active_object = bpy.context.view_layer.objects.active
+    logger.debug(f"active_object: {active_object}")
+    if active_object is not None:
+        active_object.rotation_mode = 'QUATERNION'
+        active_object.rotation_quaternion = rotation_quaternion
 
 
 async def connection_loop(context):
@@ -135,7 +150,7 @@ async def connect_to_device(context):
     if ukaton_mission is not None:
         d.ukaton_mission = ukaton_mission
         ukaton_mission.motion_data_event_dispatcher.add_event_listener(
-            MotionDataEventType.QUATERNION, on_sensor_data)
+            MotionDataEventType.QUATERNION, on_quaternion_data)
         logger.info(
             "attempting to connect to ukaton mission device...")
         d.toggle_connection_text = "connecting..."
