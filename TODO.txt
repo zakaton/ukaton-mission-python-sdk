@@ -1,4 +1,3 @@
 blender
-  fix ble sensor data issue
   rotate active object
   orbit viewport camera
