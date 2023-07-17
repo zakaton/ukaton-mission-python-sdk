@@ -111,7 +111,10 @@ def on_quaternion_data(quaternion, timestamp):
 def on_quaternion(quaternion):
     quaternion = convert_quaternion_from_webgl_to_blender(quaternion)
     d = bpy.context.scene.ukaton_mission_panel_dict
-    d.latest_quaternion = quaternion
+    d.latest_quaternion.w = quaternion.w
+    d.latest_quaternion.x = quaternion.x
+    d.latest_quaternion.y = quaternion.y
+    d.latest_quaternion.z = quaternion.z
     quaternion.rotate(d.euler_offset)
     logger.debug(f"quaternion: {quaternion}")
 
@@ -128,17 +131,10 @@ def on_quaternion(quaternion):
                     break
 
 
-# I used chatGPT to fix the quaternion
-webgl_to_blender_matrix = mathutils.Matrix.Rotation(math.radians(90.0), 4, 'X')
-
-
 def convert_quaternion_from_webgl_to_blender(quaternion):
     quaternion_array = Quaternion.as_float_array(quaternion)
     w, x, y, z = quaternion_array
-    quaternion = mathutils.Quaternion((w, x, y, z))
-    matrix = quaternion.to_matrix().to_4x4()
-    matrix = webgl_to_blender_matrix @ matrix
-    quaternion = matrix.to_quaternion()
+    quaternion = mathutils.Quaternion((w, x, -z, y))
     return quaternion
 
 
@@ -275,7 +271,11 @@ class ToggleObjectOrbitOperator(Operator):
         scene = context.scene
         d = scene.ukaton_mission_panel_dict
         should_orbit_object = not d.should_orbit_object
-        active_object = context.view_layer.objects.active
+        active_object = None
+        if context.object.mode == 'POSE':
+            active_object = context.selected_pose_bones[0]
+        else:
+            active_object = context.view_layer.objects.active
         if should_orbit_object and active_object is not None:
             d.object_to_orbit = active_object
             active_object.rotation_mode = 'QUATERNION'
