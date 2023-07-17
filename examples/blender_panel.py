@@ -253,7 +253,7 @@ class ToggleSensorDataOperator(Operator):
             data_rate = 0
             if d.is_sensor_data_enabled:
                 d.toggle_sensor_data_text = "enabling sensor data..."
-                data_rate = 40
+                data_rate = 20
             else:
                 d.toggle_sensor_data_text = "disabling sensor data..."
             d.sensor_data_configurations[SensorType.MOTION][MotionDataType.QUATERNION] = data_rate
