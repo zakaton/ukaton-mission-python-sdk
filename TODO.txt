@@ -1,4 +1,1 @@
-blender
-  button to switch mode (rotate active object vs viewport)
-  button to "lock" onto current object
-  orbit viewport camera
+articulate 3d rig

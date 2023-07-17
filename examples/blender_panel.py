@@ -19,7 +19,7 @@ bl_info = {
 }
 
 import bpy
-from bpy.types import Panel, PropertyGroup
+from bpy.types import Panel, PropertyGroup, Operator
 from bpy.props import EnumProperty, StringProperty, FloatVectorProperty
 import mathutils
 import math
@@ -28,7 +28,7 @@ import quaternion as Quaternion
 import logging
 logging.basicConfig()
 logger = logging.getLogger("ukaton_mission_panel")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 import threading
 import asyncio
@@ -89,6 +89,18 @@ class UkatonMissionPanel(Panel):
         if d.ukaton_mission is not None and d.ukaton_mission.is_connected:
             layout.operator("object.toggle_sensor_data_operator",
                             text=d.toggle_sensor_data_text)
+            layout.operator("object.toggle_object_orbit_operator",
+                            text=d.toggle_object_orbit_text)
+            layout.operator("object.toggle_viewport_orbit_operator",
+                            text=d.toggle_viewport_orbit_text)
+
+
+def update_euler_offset(context):
+    d = context.scene.ukaton_mission_panel_dict
+    euler = d.latest_quaternion.to_euler("ZYX")
+    euler.x = euler.y = 0
+    euler.z *= -1
+    d.euler_offset = euler
 
 
 def on_quaternion_data(quaternion, timestamp):
@@ -98,12 +110,22 @@ def on_quaternion_data(quaternion, timestamp):
 
 def on_quaternion(quaternion):
     quaternion = convert_quaternion_from_webgl_to_blender(quaternion)
+    d = bpy.context.scene.ukaton_mission_panel_dict
+    d.latest_quaternion = quaternion
+    quaternion.rotate(d.euler_offset)
     logger.debug(f"quaternion: {quaternion}")
-    active_object = bpy.context.view_layer.objects.active
-    logger.debug(f"active_object: {active_object}")
-    if active_object is not None:
-        active_object.rotation_mode = 'QUATERNION'
-        active_object.rotation_quaternion = quaternion
+
+    if d.should_orbit_object:
+        d.object_to_orbit.rotation_quaternion = quaternion
+
+    if d.should_orbit_viewport:
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    space = area.spaces.active
+                    v3d = space.region_3d
+                    v3d.view_rotation = quaternion
+                    break
 
 
 # I used chatGPT to fix the quaternion
@@ -171,6 +193,10 @@ async def connect_to_device(context):
         if ukaton_mission.is_connected:
             logger.info(f"connected to device!")
             d.toggle_connection_text = "disconnect"
+        else:
+            logger.info(f"couldn't connect to device")
+            del d.ukaton_mission
+            d.toggle_connection_text = "connect"
 
 
 async def disconnect_from_device(context):
@@ -192,7 +218,7 @@ def run_connection_loop(context):
     loop.run_forever()
 
 
-class ToggleConnectionOperator(bpy.types.Operator):
+class ToggleConnectionOperator(Operator):
     """toggle connection to a Ukaton Mission device via bluetooth or udp"""
     bl_idname = "object.toggle_connection_operator"
     bl_label = "toggle connection"
@@ -216,7 +242,7 @@ class ToggleConnectionOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ToggleSensorDataOperator(bpy.types.Operator):
+class ToggleSensorDataOperator(Operator):
     """toggle sensor data for a Ukaton Mission device"""
     bl_idname = "object.toggle_sensor_data_operator"
     bl_label = "toggle sensor data"
@@ -231,12 +257,49 @@ class ToggleSensorDataOperator(bpy.types.Operator):
             data_rate = 0
             if d.is_sensor_data_enabled:
                 d.toggle_sensor_data_text = "enabling sensor data..."
-                data_rate = 20
+                data_rate = 40
             else:
                 d.toggle_sensor_data_text = "disabling sensor data..."
             d.sensor_data_configurations[SensorType.MOTION][MotionDataType.QUATERNION] = data_rate
             d.should_set_sensor_data_configurations = True
 
+        return {'FINISHED'}
+
+
+class ToggleObjectOrbitOperator(Operator):
+    """Orbit the active object"""
+    bl_idname = "object.toggle_object_orbit_operator"
+    bl_label = "Toggle Object Orbit"
+
+    def execute(self, context):
+        scene = context.scene
+        d = scene.ukaton_mission_panel_dict
+        should_orbit_object = not d.should_orbit_object
+        active_object = context.view_layer.objects.active
+        if should_orbit_object and active_object is not None:
+            d.object_to_orbit = active_object
+            active_object.rotation_mode = 'QUATERNION'
+            update_euler_offset(context)
+        else:
+            d.object_to_orbit = None
+            should_orbit_object = False
+        d.should_orbit_object = should_orbit_object
+        d.toggle_object_orbit_text = "stop orbiting object" if d.should_orbit_object else "orbit object"
+        return {'FINISHED'}
+
+
+class ToggleViewportOrbitOperator(Operator):
+    """Orbit the viewport"""
+    bl_idname = "object.toggle_viewport_orbit_operator"
+    bl_label = "Toggle Viewport Orbit"
+
+    def execute(self, context):
+        scene = context.scene
+        d = scene.ukaton_mission_panel_dict
+        d.should_orbit_viewport = not d.should_orbit_viewport
+        if d.should_orbit_viewport:
+            update_euler_offset(context)
+        d.toggle_viewport_orbit_text = "stop orbiting viewport" if d.should_orbit_viewport else "orbit viewport"
         return {'FINISHED'}
 
 
@@ -249,8 +312,14 @@ class UkatonMissionPanelProperties(PropertyGroup):
     ip_address: bpy.props.StringProperty(default="192.168.1.30")
 
 
-classes = [UkatonMissionPanel, ToggleConnectionOperator, ToggleSensorDataOperator,
-           UkatonMissionPanelProperties]
+classes = [
+    UkatonMissionPanel,
+    ToggleConnectionOperator,
+    ToggleSensorDataOperator,
+    ToggleObjectOrbitOperator,
+    ToggleViewportOrbitOperator,
+    UkatonMissionPanelProperties
+]
 
 
 def register():
@@ -272,7 +341,14 @@ def register():
                 MotionDataType.QUATERNION: 0,
             }
         },
-        "should_set_sensor_data_configurations": False
+        "toggle_object_orbit_text": "orbit object",
+        "toggle_viewport_orbit_text": "orbit viewport",
+        "should_set_sensor_data_configurations": False,
+        "euler_offset": mathutils.Euler(),
+        "latest_quaternion": mathutils.Quaternion(),
+        "should_orbit_object": False,
+        "object_to_orbit": None,
+        "should_orbit_viewport": False,
     })
 
 
